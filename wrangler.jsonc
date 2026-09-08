@@ -14,7 +14,7 @@
     {
       "binding": "DB",
       "database_name": "cf-vps-monitor",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "7ba9a3d6-644a-4060-92f0-c488c061478b",
       "migrations_dir": "migrations",
     },
   ],
