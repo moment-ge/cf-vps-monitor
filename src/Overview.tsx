@@ -416,6 +416,10 @@ export function FleetCard({
     .filter(Boolean)
     .join(" · ");
   const latest = samples[samples.length - 1];
+  // The node snapshot is the newest accepted report; history is intentionally
+  // downsampled, so use it only as a fallback until a live report exists.
+  const latency = m?.latencyMs ?? latest?.latencyMs;
+  const loss = m?.lossPercent ?? latest?.lossPercent;
   const staleNote = node.lastSeen
     ? "最近一次指标已过期，等待节点恢复上报"
     : "等待节点完成首次上报";
@@ -561,8 +565,8 @@ export function FleetCard({
             延迟
           </span>
           <b className={`num ${live ? "" : "stale"}`}>
-            {latest?.latencyMs != null
-              ? `${latest.latencyMs.toFixed(0)} ms`
+            {latency != null
+              ? `${latency.toFixed(0)} ms`
               : "待采样"}
           </b>
           <Strip samples={samples} kind="latency" />
@@ -570,8 +574,8 @@ export function FleetCard({
         <div>
           <span className="mlabel">丢包</span>
           <b className={`num ${live ? "" : "stale"}`}>
-            {latest?.lossPercent != null
-              ? `${latest.lossPercent.toFixed(1)}%`
+            {loss != null
+              ? `${loss.toFixed(1)}%`
               : "待采样"}
           </b>
           <Strip samples={samples} kind="loss" />
