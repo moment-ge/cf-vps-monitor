@@ -1,0 +1,11 @@
+NASA Blue Marble texture
+
+Asset: src/assets/earth-blue-marble.jpg (2048 × 1024, unmodified)
+Title: The Blue Marble: Land Surface, Ocean Color and Sea Ice
+Source: https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57730/land_ocean_ice_2048.jpg
+Background: https://science.nasa.gov/earth/earth-observatory/the-blue-marble-true-color-global-imagery-at-1km-resolution/
+Credit: NASA Earth Observatory / Blue Marble team.
+
+NASA imagery is generally available for informational and educational use.
+NASA does not endorse this application.
+Media usage guidelines: https://www.nasa.gov/nasa-brand-center/images-and-media/

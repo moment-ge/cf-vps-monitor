@@ -1,0 +1,35 @@
+[Unit]
+Description=CF VPS Monitor agent
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=3600
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=cf-monitor
+Group=cf-monitor
+ExecStart=/opt/cf-monitor/cf-monitor-agent -config /etc/cf-monitor/config.json
+Restart=on-failure
+RestartSec=300
+Nice=10
+CPUQuota=5%
+MemoryMax=64M
+MemorySwapMax=0
+TasksMax=16
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+StandardOutput=journal
+StandardError=journal
+LogRateLimitIntervalSec=3600
+LogRateLimitBurst=15
+
+[Install]
+WantedBy=multi-user.target

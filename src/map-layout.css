@@ -1,0 +1,657 @@
+/* Layout authority for the dashboard maps; visual effects stay in map-effects.css. */
+:root[data-theme] .workspace-overview .dash-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  max-width: 1920px;
+  margin-inline: auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  flex: 0 0 auto;
+  align-items: stretch;
+  overflow: visible;
+  gap: clamp(12px, 1.5vw, 24px);
+}
+
+:root[data-theme] .workspace-overview .dash-top > .stat-grid {
+  min-width: 0;
+  height: auto;
+  max-height: none;
+  grid-template-rows: none;
+  align-content: stretch;
+}
+
+:root[data-theme] .workspace-overview .dash-top > .globe-panel {
+  container: node-map / inline-size;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+}
+
+:root[data-theme] .globe-panel .geo-overview:has(.responsive-map) {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map[data-touch-active] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "heading switch"
+    "legend effects"
+    "picker picker"
+    "viewport viewport"
+    "info controls"
+    "hint hint";
+  align-content: start;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  padding: clamp(12px, 2cqi, 24px);
+  border-radius: 12px;
+  overflow: visible;
+  touch-action: auto;
+  overscroll-behavior: auto;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  > :is(
+    .flat-map-heading,
+    .globe-network-heading,
+    .map-view-switcher,
+    .map-health-legend,
+    .map-effects-toggle,
+    .map-location-picker,
+    .map-location-info,
+    .map-empty-state,
+    .flat-map-controls,
+    .globe-controls,
+    .map-interaction-hint
+  ) {
+  position: relative;
+  inset: auto;
+  transform: none;
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  :is(.flat-map-heading, .globe-network-heading) {
+  grid-area: heading;
+  display: grid;
+  gap: 4px;
+  align-self: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-view-switcher {
+  grid-area: switch;
+  display: flex;
+  flex-wrap: wrap;
+  justify-self: end;
+  gap: 4px;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-health-legend {
+  grid-area: legend;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 11px;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-health-legend
+  > span {
+  white-space: nowrap;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-effects-toggle {
+  grid-area: effects;
+  justify-self: end;
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-location-picker {
+  grid-area: picker;
+  width: min(100%, 300px);
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-location-picker
+  .ui-select-trigger {
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  :is(.flat-map-graphic, .globe-canvas) {
+  grid-area: viewport;
+  display: block;
+  position: relative;
+  inset: auto;
+  width: 100%;
+  min-width: 0;
+  height: 260px;
+  height: clamp(180px, 43cqi, 420px);
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  transform: none;
+  touch-action: none;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .globe-canvas {
+  height: 300px;
+  height: clamp(220px, 48cqi, 440px);
+  overflow: hidden;
+  border-radius: 8px;
+  isolation: isolate;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .globe-canvas
+  canvas {
+  position: absolute;
+  inset: 0;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .globe-message {
+  z-index: 4;
+  padding: 20px;
+  text-align: center;
+  pointer-events: none;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .globe-marker
+  .map-node-label {
+  max-width: min(180px, 40cqi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  :is(.map-location-info, .map-empty-state) {
+  grid-area: info;
+  width: 100%;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-empty-state {
+  padding: 12px;
+  text-align: start;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-location-trigger {
+  width: 100%;
+  min-height: 52px;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-location-trigger
+  > span {
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-location-trigger
+  > svg {
+  flex-shrink: 0;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  :is(.flat-map-controls, .globe-controls) {
+  grid-area: controls;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-self: end;
+  justify-content: center;
+  align-items: center;
+  width: auto;
+  height: auto;
+  padding: 4px;
+  gap: 4px;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .globe-controls::before {
+  content: none;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  :is(.flat-map-controls, .globe-controls)
+  > span {
+  display: none;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  :is(.flat-map-controls, .globe-controls)
+  button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border-radius: 6px;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-view-switcher
+  button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: normal;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  :is(button, a) {
+  touch-action: manipulation;
+}
+
+/* Real target sizes replace the old overlapping pseudo-element hit areas. */
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  :is(.map-view-switcher, .flat-map-controls, .globe-controls)
+  button::after {
+  content: none;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-interaction-hint {
+  grid-area: hint;
+  display: block;
+  justify-self: center;
+  white-space: normal;
+  text-align: center;
+}
+
+/* Expansion stays in document flow, including short landscape viewports. */
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-node-popover {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 8px;
+  transform-origin: top center;
+  overflow-wrap: anywhere;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-location-info {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-popover-heading
+  button {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-popover-nodes {
+  max-height: min(260px, 45dvh);
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  .map-popover-nodes
+  button {
+  min-height: 44px;
+}
+
+@container node-map (max-width: 620px) {
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map[data-touch-active] {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "heading switch"
+      "legend legend"
+      "picker effects"
+      "viewport viewport"
+      "controls controls"
+      "info info"
+      "hint hint";
+    gap: 8px;
+    padding: 12px;
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    :is(.flat-map-heading, .globe-network-heading)
+    small {
+    display: none;
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    .map-health-legend {
+    justify-content: space-between;
+    gap: 6px 10px;
+    padding-block: 4px;
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    .map-view-switcher
+    button {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    :is(.flat-map-controls, .globe-controls) {
+    justify-self: center;
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    .flat-map-node
+    .map-node-label {
+    display: none;
+  }
+}
+
+@container node-map (max-width: 300px) {
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map[data-touch-active] {
+    grid-template-areas: "heading heading" "switch switch" "legend legend" "picker effects" "viewport viewport" "controls controls" "info info" "hint hint";
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    .map-view-switcher {
+    justify-self: start;
+  }
+}
+
+@media (pointer: coarse) {
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    .globe-marker {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    .map-interaction-hint {
+    display: none;
+  }
+}
+
+@media (min-width: 1100px) {
+  :root[data-theme] .workspace-overview .dash-top {
+    grid-template-columns: minmax(260px, 0.78fr) minmax(0, 1.22fr);
+  }
+  :root[data-theme] .workspace-overview .dash-top > .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .workspace-overview .dash-top > .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  :root[data-theme] .workspace-overview .dash-top .stat-card {
+    padding: 12px;
+    gap: 6px;
+  }
+  :root[data-theme] .workspace-overview .dash-top .stat-value {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+  :root[data-theme] .workspace-overview .dash-top .stat-value strong {
+    font-size: clamp(22px, 6vw, 30px);
+  }
+}
+
+:root[data-theme]
+  .globe-panel
+  .network-observatory.responsive-map
+  :is(.flat-map-controls, .globe-controls)
+  .map-touch-toggle {
+  display: none;
+}
+
+@media (any-pointer: coarse) {
+  .network-observatory[data-touch-active="false"] {
+    --map-touch-action: pan-y pinch-zoom;
+  }
+  .network-observatory[data-touch-active="true"] {
+    --map-touch-action: none;
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    :is(.flat-map-graphic, .globe-canvas) {
+    touch-action: var(--map-touch-action);
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    :is(.flat-map-controls, .globe-controls)
+    .map-touch-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 1 auto;
+    width: auto;
+    min-width: 72px;
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    .map-touch-toggle[aria-pressed="true"] {
+    color: var(--map-accent);
+    background: color-mix(
+      in srgb,
+      var(--map-accent) 12%,
+      var(--dash-globe-field)
+    );
+  }
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    .globe-controls
+    .rotation-speed {
+    display: none;
+  }
+}
+
+@media (hover: none) and (orientation: landscape) and (max-height: 500px) {
+  :root[data-theme]
+    .globe-panel
+    .network-observatory.responsive-map
+    :is(.flat-map-graphic, .globe-canvas) {
+    height: clamp(160px, 55dvh, 240px);
+  }
+}
+
+/* A map wide enough to show the full network does not need six stacked
+   control rows. This keeps the map legible on desktop while restoring useful
+   vertical space for the live node list below it. */
+@media (min-width: 1320px) {
+  :root[data-theme]
+    .workspace-overview
+    .globe-panel
+    .network-observatory.responsive-map[data-touch-active] {
+    grid-template-columns: minmax(190px, 1fr) auto auto;
+    grid-template-areas:
+      "heading legend switch"
+      "picker picker effects"
+      "viewport viewport viewport"
+      "info hint controls";
+    gap: 10px 14px;
+    padding: 16px;
+  }
+
+  :root[data-theme]
+    .workspace-overview
+    .globe-panel
+    .network-observatory.responsive-map
+    .map-health-legend {
+    justify-self: center;
+    gap: 8px 10px;
+  }
+
+  :root[data-theme]
+    .workspace-overview
+    .globe-panel
+    .network-observatory.responsive-map
+    .map-effects-toggle {
+    min-height: 36px;
+    padding: 6px 9px;
+  }
+
+  :root[data-theme]
+    .workspace-overview
+    .globe-panel
+    .network-observatory.responsive-map
+    .map-location-picker {
+    width: min(100%, 320px);
+  }
+
+  :root[data-theme]
+    .workspace-overview
+    .globe-panel
+    .network-observatory.responsive-map
+    :is(.flat-map-graphic, .globe-canvas) {
+    height: clamp(340px, 40cqi, 400px);
+  }
+
+  :root[data-theme]
+    .workspace-overview
+    .globe-panel
+    .network-observatory.responsive-map
+    :is(.flat-map-controls, .globe-controls)
+    button {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  :root[data-theme]
+    .workspace-overview
+    .globe-panel
+    .network-observatory.responsive-map
+    .map-interaction-hint {
+    justify-self: center;
+    white-space: nowrap;
+  }
+}

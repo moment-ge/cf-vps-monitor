@@ -1,0 +1,95 @@
+:root[data-theme] .workspace-detail {
+  padding: 24px;
+}
+.node-detail-page,
+.node-detail-unavailable {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+.node-detail-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.node-detail-heading > div {
+  flex: 1;
+  min-width: 180px;
+}
+.node-detail-kicker {
+  color: var(--dash-muted);
+  font-size: 11px;
+}
+.node-detail-heading h1 {
+  margin: 6px 0;
+  color: var(--dash-text);
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.node-detail-heading h1:focus {
+  outline: none;
+}
+.node-detail-heading p {
+  margin: 0;
+  color: var(--dash-muted);
+  font-size: 12px;
+}
+:root[data-theme] .node-detail-heading > button,
+:root[data-theme] .node-detail-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 1px solid var(--dash-line);
+  border-radius: 7px;
+  background: var(--dash-panel);
+  color: var(--dash-text);
+  padding: 8px 12px;
+  cursor: pointer;
+}
+:root[data-theme] .node-detail-page .detail-body {
+  background: var(--dash-panel);
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--dash-elevation);
+}
+:root[data-theme] .node-detail-page .detail-meta {
+  margin-bottom: 18px;
+}
+:root[data-theme] .node-detail-page .section-heading h3 {
+  font-size: 16px;
+}
+:root[data-theme] .node-detail-page button:focus-visible,
+:root[data-theme] .node-detail-back:focus-visible {
+  outline: 2px solid var(--ok);
+  outline-offset: 3px;
+}
+:root[data-theme] .name-link {
+  text-decoration: none;
+}
+@media (max-width: 700px) {
+  :root[data-theme] .workspace-detail {
+    padding: 16px 12px;
+  }
+  .node-detail-heading {
+    gap: 12px;
+  }
+  .node-detail-heading .node-detail-back {
+    margin-right: calc(100% - 110px);
+  }
+  :root[data-theme] .node-detail-page .detail-body {
+    padding: 16px;
+  }
+  :root[data-theme] .node-detail-page .detail-specs,
+  :root[data-theme] .node-detail-page .detail-readings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  :root[data-theme] .node-detail-heading > button {
+    min-height: 44px;
+  }
+}

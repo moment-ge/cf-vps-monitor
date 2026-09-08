@@ -1,0 +1,5204 @@
+/* Dashboard surface: a dark-first operations console layered over style.css.
+   Loaded last, so single-class rules here win over glass.css by order. */
+
+:root {
+  --dash-bg: oklch(0.967 0.006 220);
+  --dash-field: oklch(0.947 0.009 220);
+  --dash-globe-field: oklch(0.982 0.007 205);
+  --dash-panel: oklch(0.995 0.003 220);
+  --dash-inset: oklch(0.925 0.011 220);
+  --dash-line: oklch(0.866 0.012 220);
+  --dash-line-soft: oklch(0.915 0.008 220);
+  --dash-text: oklch(0.265 0.022 220);
+  --dash-muted: oklch(0.46 0.018 220);
+  --dash-faint: oklch(0.61 0.014 220);
+  --dash-elevation:
+    0 0 0 1px rgb(19 39 49 / 0.025),
+    0 1px 2px rgb(19 39 49 / 0.035),
+    0 8px 20px -14px rgb(19 39 49 / 0.16);
+  --dash-elevation-hover:
+    0 0 0 1px rgb(19 39 49 / 0.06),
+    0 2px 5px rgb(19 39 49 / 0.05),
+    0 12px 26px -16px rgb(19 39 49 / 0.2);
+  --ok: oklch(0.5 0.14 150);
+  --fair: oklch(0.55 0.14 125);
+  --warn: oklch(0.61 0.13 82);
+  --alert: oklch(0.53 0.19 28);
+  --idle: oklch(0.85 0.015 220);
+  --t-cpu: oklch(0.54 0.13 235);
+  --t-mem: oklch(0.5 0.12 155);
+  --t-disk: oklch(0.58 0.13 65);
+  --t-net: oklch(0.51 0.14 295);
+  --up: oklch(0.5 0.14 150);
+  --down: oklch(0.5 0.16 258);
+}
+:root[data-theme="dark"] {
+  --dash-bg: #0f151b;
+  --dash-field: #121b22;
+  --dash-globe-field: #121e26;
+  --dash-panel: #172129;
+  --dash-inset: #1d2931;
+  --dash-line: #2b3943;
+  --dash-line-soft: #202c34;
+  --dash-text: #edf4f5;
+  --dash-muted: #a8b7bd;
+  --dash-faint: #74848d;
+  --dash-elevation: 0 0 0 1px rgb(255 255 255 / 0.075);
+  --dash-elevation-hover: 0 0 0 1px rgb(255 255 255 / 0.14);
+  --ok: #22c55e;
+  --fair: #a3e635;
+  --warn: #eab308;
+  --alert: #ef4444;
+  --idle: #2b333d;
+  --t-cpu: #38bdf8;
+  --t-mem: #34d399;
+  --t-disk: #fbbf24;
+  --t-net: #a78bfa;
+  --up: #22c55e;
+  --down: #60a5fa;
+}
+:root,
+:root[data-theme="dark"] {
+  background: var(--dash-bg);
+  color: var(--dash-text);
+}
+body::before {
+  background: var(--dash-bg);
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Radix checkbox primitive used by form labels. */
+.ui-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  min-width: 17px;
+  min-height: 17px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--dash-line);
+  border-radius: 4px;
+  background: var(--dash-panel);
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.ui-checkbox:hover {
+  border-color: color-mix(in srgb, var(--ok) 60%, var(--dash-line));
+}
+.ui-checkbox[data-state="checked"] {
+  border-color: var(--ok);
+  background: var(--ok);
+}
+.ui-checkbox:focus-visible {
+  outline: none;
+  border-color: var(--ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent);
+}
+.ui-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+.ui-checkbox-indicator {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+/* ------------------------------------------------------------------ shell */
+.app-shell {
+  display: block;
+  background: var(--dash-bg);
+  min-height: 100vh;
+}
+.main-shell {
+  background: transparent;
+  min-height: 100vh;
+}
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 250px;
+  height: 100vh;
+  transform: translateX(-101%);
+  transition: transform 0.2s ease;
+  background: var(--dash-panel);
+  border-right: 1px solid var(--dash-line);
+  z-index: 60;
+  padding: 16px;
+  gap: 18px;
+  flex-direction: column;
+  display: flex;
+  backdrop-filter: none;
+}
+.sidebar.open {
+  transform: none;
+}
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(2, 6, 12, 0.5);
+  border: 0;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 60px;
+  padding: 0 24px;
+  background: var(--dash-panel);
+  border-bottom: 1px solid var(--dash-line);
+  backdrop-filter: none;
+}
+.top-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.brand-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 0;
+  color: var(--dash-text);
+  cursor: pointer;
+  box-shadow: none;
+}
+.brand-inline > span:last-child {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.brand-inline img {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.brand-inline .brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--ok);
+  color: #06130b;
+  box-shadow: none;
+}
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.top-actions .live-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--dash-muted);
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+}
+.top-actions .live-label i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+.top-actions .live-label.sync-error i {
+  background: var(--alert);
+}
+.top-actions .icon-button {
+  width: auto;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 9px;
+  gap: 6px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--dash-muted);
+  box-shadow: none;
+}
+.top-actions .icon-button:hover:not(:disabled) {
+  background: var(--dash-inset);
+  color: var(--dash-text);
+}
+.btn-text {
+  font-size: 12.5px;
+}
+@media (max-width: 900px) {
+  .btn-text {
+    display: none;
+  }
+  .top-actions .live-label {
+    display: none;
+  }
+  .topbar {
+    padding: 0 14px;
+  }
+}
+
+main {
+  max-width: none;
+  padding: 0 0 28px;
+}
+
+/* -------------------------------------------------------------- dash top */
+.dash-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(360px, 0.82fr);
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--dash-line);
+  background: transparent;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 4px 0;
+}
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 13px;
+  min-height: 104px;
+  border: 1px solid color-mix(in srgb, var(--dash-line) 78%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--dash-panel) 76%, transparent);
+  box-shadow: 0 10px 24px rgba(10, 24, 38, 0.08), inset 0 1px 0 rgba(255,255,255,.42);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+}
+.stat-label {
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+.stat-value {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.stat-value strong {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--dash-text);
+}
+.stat-value small {
+  font-size: 12.5px;
+  color: var(--dash-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stat-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+}
+.stat-meter span {
+  font-size: 12px;
+  color: var(--dash-muted);
+  font-variant-numeric: tabular-nums;
+}
+.stat-note {
+  font-size: 11.5px;
+  color: var(--dash-faint);
+  margin-top: auto;
+}
+.mbar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--idle);
+  overflow: hidden;
+  min-width: 0;
+}
+.mbar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ok);
+  transition: width 0.3s ease;
+}
+.mbar i.warn {
+  background: var(--warn);
+}
+.mbar i.alert {
+  background: var(--alert);
+}
+.spark {
+  width: 100%;
+  height: 28px;
+  margin-top: auto;
+  display: block;
+  overflow: visible;
+}
+.spark polyline {
+  fill: none;
+  stroke: var(--ok);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.spark.empty {
+  height: 28px;
+}
+
+/* ---------------------------------------------------------- globe panel */
+.globe-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--dash-line);
+  min-height: 300px;
+  padding: 12px 0;
+}
+.globe-legend {
+  position: absolute;
+  right: 34px;
+  top: 50%;
+  transform: translateY(-50%);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  z-index: 2;
+}
+.globe-legend li {
+  display: grid;
+  grid-template-columns: 9px 44px auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--dash-muted);
+}
+.globe-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+.globe-legend i.warning {
+  background: var(--warn);
+}
+.globe-legend i.offline {
+  background: var(--alert);
+}
+.globe-legend i.pending {
+  background: var(--dash-faint);
+}
+.globe-legend b {
+  color: var(--dash-text);
+  font-weight: 600;
+}
+@media (max-width: 1180px) {
+  .dash-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .globe-panel {
+    border-left: 0;
+    border-top: 1px solid var(--dash-line);
+    min-height: 260px;
+  }
+  .globe-legend {
+    position: static;
+    transform: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+  }
+}
+@media (max-width: 720px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 14px;
+    gap: 10px;
+  }
+  .stat-value strong {
+    font-size: 24px;
+  }
+}
+
+/* --------------------------------------------------------- fleet toolbar */
+.fleet-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 16px 20px 14px;
+}
+.fleet-bar h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--dash-text);
+}
+.count-chip {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--dash-inset);
+  border: 1px solid var(--dash-line);
+  color: var(--dash-muted);
+  font-variant-numeric: tabular-nums;
+}
+.chip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.chip-row + .chip-row {
+  padding-left: 14px;
+  border-left: 1px solid var(--dash-line);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--dash-muted);
+  font-size: 12.5px;
+  cursor: pointer;
+  box-shadow: none;
+  white-space: nowrap;
+}
+.chip:hover {
+  background: var(--dash-inset);
+  color: var(--dash-text);
+}
+.chip.on {
+  border-color: var(--ok);
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+}
+.chip .num {
+  font-size: 11.5px;
+  color: var(--dash-faint);
+}
+.chip.on .num {
+  color: inherit;
+}
+.chip .state-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+.chip.warning .state-dot {
+  background: var(--warn);
+}
+.chip.offline .state-dot {
+  background: var(--alert);
+}
+.chip.pending .state-dot {
+  background: var(--dash-faint);
+}
+.chip.warning.on {
+  border-color: var(--warn);
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.chip.offline.on {
+  border-color: var(--alert);
+  color: var(--alert);
+  background: color-mix(in srgb, var(--alert) 12%, transparent);
+}
+.chip.pending.on {
+  border-color: var(--dash-faint);
+  color: var(--dash-text);
+  background: var(--dash-inset);
+}
+.fleet-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.fleet-tools .ui-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 230px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--dash-line);
+  background: var(--dash-panel);
+  color: var(--dash-faint);
+}
+.fleet-tools .ui-search input {
+  border: 0;
+  background: transparent;
+  min-height: 32px;
+  padding: 0;
+  font-size: 12.5px;
+  color: var(--dash-text);
+  width: 100%;
+}
+.fleet-tools > .ui-select-trigger {
+  width: 150px;
+  flex: 0 0 150px;
+  min-height: 34px;
+  height: 34px;
+  font-size: 12.5px;
+}
+.fleet-tools .segmented {
+  display: flex;
+  border: 1px solid var(--dash-line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--dash-panel);
+}
+.fleet-tools .segmented .icon-button {
+  width: 34px;
+  height: 32px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--dash-faint);
+  box-shadow: none;
+}
+.fleet-tools .segmented .icon-button.active {
+  background: var(--dash-inset);
+  color: var(--ok);
+}
+@media (max-width: 900px) {
+  .fleet-bar {
+    padding: 14px;
+  }
+  .chip-row + .chip-row {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .fleet-tools {
+    width: 100%;
+    margin-left: 0;
+  }
+  .fleet-tools .ui-search {
+    flex: 1;
+    width: auto;
+  }
+  .fleet-tools > .ui-select-trigger {
+    flex: 1 1 150px;
+    width: auto;
+  }
+}
+
+/* ------------------------------------------------------------ node cards */
+.node-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  padding: 0 20px;
+}
+.node-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 13px 15px 14px;
+  border-radius: 11px;
+  border: 1px solid var(--dash-line);
+  background: var(--dash-panel);
+  box-shadow: none;
+  backdrop-filter: none;
+  transition: border-color 0.15s ease;
+}
+.node-card:hover {
+  border-color: var(--dash-faint);
+}
+.node-card.offline {
+  border-color: color-mix(in srgb, var(--alert) 45%, var(--dash-line));
+}
+.node-card.warning {
+  border-color: color-mix(in srgb, var(--warn) 40%, var(--dash-line));
+}
+.node-card.pending {
+  border-style: dashed;
+}
+.card-open {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: none;
+  border-radius: 11px;
+  cursor: pointer;
+  z-index: 0;
+  min-height: 0;
+  box-shadow: none;
+}
+.card-open:focus-visible {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
+}
+.node-card > *:not(.card-open) {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+.node-card .card-icon {
+  pointer-events: auto;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.card-head .state-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--ok);
+}
+.node-card.warning .card-head .state-dot {
+  background: var(--warn);
+}
+.node-card.offline .card-head .state-dot {
+  background: var(--alert);
+}
+.node-card.pending .card-head .state-dot {
+  background: var(--dash-faint);
+}
+.card-head h3 {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 650;
+  letter-spacing: 0;
+  color: var(--dash-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* Final dashboard overrides. The legacy style layers contain translucent,
+   image-backed and desktop-horizontal shell rules; keep this surface opaque
+   and the navigation a predictable vertical drawer at every viewport. */
+:root {
+  --bg: var(--dash-bg);
+  --surface: var(--dash-panel);
+  --soft: var(--dash-inset);
+  --border: var(--dash-line);
+  --text: var(--dash-text);
+  --muted: var(--dash-muted);
+  --green: var(--ok);
+  --green-bg: color-mix(in srgb, var(--ok) 12%, var(--dash-panel));
+  --blue: var(--down);
+  --amber: var(--warn);
+  --red: var(--alert);
+  --monitor-bg: var(--dash-bg);
+  --monitor-panel: var(--dash-panel);
+  --monitor-panel-strong: var(--dash-panel);
+  --monitor-border: var(--dash-line);
+  --monitor-grid: transparent;
+  --monitor-accent: var(--ok);
+  --monitor-accent-soft: color-mix(in srgb, var(--ok) 12%, var(--dash-panel));
+  background: var(--dash-bg);
+  color: var(--dash-text);
+}
+:root[data-theme="dark"] {
+  --bg: var(--dash-bg);
+  --surface: var(--dash-panel);
+  --soft: var(--dash-inset);
+  --border: var(--dash-line);
+  --text: var(--dash-text);
+  --muted: var(--dash-muted);
+  --green: var(--ok);
+  --green-bg: color-mix(in srgb, var(--ok) 16%, var(--dash-panel));
+  --blue: var(--down);
+  --amber: var(--warn);
+  --red: var(--alert);
+  --monitor-bg: var(--dash-bg);
+  --monitor-panel: var(--dash-panel);
+  --monitor-panel-strong: var(--dash-panel);
+  --monitor-border: var(--dash-line);
+  --monitor-grid: transparent;
+  --monitor-accent: var(--ok);
+  --monitor-accent-soft: color-mix(in srgb, var(--ok) 16%, var(--dash-panel));
+}
+html,
+body,
+#root,
+body::before {
+  background: var(--dash-bg);
+  background-image: none;
+  filter: none;
+}
+
+/* The globe is an interactive data surface; keep it free of decorative
+   background imagery and let the network visualization provide the texture. */
+:root[data-theme] .geo-overview::before,
+:root[data-theme] .geo-overview::after {
+  background-image: none;
+  background: none;
+}
+
+/* Opaque shell and drawer geometry. The explicit :root[data-theme] weight
+   outranks the older glass desktop media block. */
+:root[data-theme] .app-shell,
+:root[data-theme] .main-shell {
+  background: var(--dash-bg);
+}
+:root[data-theme] .main-shell {
+  margin-left: 0;
+}
+:root[data-theme] .sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 240px;
+  height: 100dvh;
+  transform: translateX(-101%);
+  visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 18px;
+  padding: 22px 14px 14px;
+  background: var(--dash-panel);
+  border: 0;
+  border-right: 1px solid var(--dash-line);
+  box-shadow: 8px 0 28px rgba(3, 10, 16, 0.08);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  z-index: 60;
+}
+:root[data-theme] .sidebar.open {
+  transform: none;
+  visibility: visible;
+}
+:root[data-theme] .sidebar .brand {
+  display: flex;
+  flex-direction: row;
+  margin: 0 7px 16px;
+  min-width: 0;
+}
+:root[data-theme] .sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+:root[data-theme] .sidebar nav button {
+  width: 100%;
+  min-height: 40px;
+  justify-content: flex-start;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+:root[data-theme] .sidebar-bottom {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+}
+:root[data-theme] .sidebar-backdrop {
+  display: block;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  background: rgba(2, 6, 12, 0.5);
+  z-index: 55;
+}
+:root[data-theme] .topbar {
+  background: var(--dash-panel);
+  border-bottom: 1px solid var(--dash-line);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Shared dialog/form rhythm; .ui-* controls remain owned by form-controls.css. */
+:root[data-theme] dialog {
+  width: 550px;
+  max-width: calc(100vw - 30px);
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--dash-line);
+  border-radius: 8px;
+  color: var(--dash-text);
+  background: var(--dash-panel);
+  box-shadow: 0 24px 70px rgba(2, 6, 12, 0.28);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-theme] dialog::backdrop {
+  background: rgba(2, 6, 12, 0.5);
+}
+:root[data-theme] .modal-head {
+  padding: 16px 20px;
+  gap: 12px;
+  background: var(--dash-panel);
+  border-bottom: 1px solid var(--dash-line);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-theme] .modal-head h2 {
+  font-size: 17px;
+  line-height: 1.35;
+}
+:root[data-theme] .modal-head + form > .form-grid,
+:root[data-theme] .node-form > .form-grid {
+  padding: 20px;
+  gap: 16px;
+}
+:root[data-theme] .field {
+  gap: 7px;
+  font-size: 13px;
+}
+:root[data-theme] .field > span {
+  font-size: 13px;
+  color: var(--dash-muted);
+}
+:root[data-theme] .field input,
+:root[data-theme] .field select,
+:root[data-theme] .field textarea {
+  min-height: 38px;
+  font-size: 14px;
+  border-radius: 8px;
+  border-color: var(--dash-line);
+  background: var(--dash-panel);
+  color: var(--dash-text);
+}
+:root[data-theme] .modal-actions {
+  padding: 14px 20px;
+  gap: 8px;
+  border-top: 1px solid var(--dash-line);
+}
+:root[data-theme] .login-body,
+:root[data-theme] .token-body {
+  padding: 20px;
+}
+
+@media (max-width: 720px) {
+  :root[data-theme] .sidebar {
+    width: min(240px, calc(100vw - 28px));
+  }
+  :root[data-theme] dialog {
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+  :root[data-theme] .modal-head + form > .form-grid,
+  :root[data-theme] .node-form > .form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+    gap: 14px;
+  }
+  :root[data-theme] .modal-actions {
+    padding: 12px 16px;
+  }
+}
+
+/* Radix form primitives: keep custom controls aligned with the dashboard
+   palette after the legacy glass layer has loaded. */
+:root[data-theme] .ui-input,
+:root[data-theme] .ui-textarea,
+:root[data-theme] .ui-select-trigger {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--dash-line);
+  border-radius: 8px;
+  background: var(--dash-panel);
+  color: var(--dash-text);
+  box-shadow: none;
+}
+
+:root[data-theme] .ui-input,
+:root[data-theme] .ui-textarea {
+  padding: 9px 11px;
+}
+
+:root[data-theme] .ui-input::placeholder,
+:root[data-theme] .ui-textarea::placeholder {
+  color: var(--dash-faint);
+}
+
+:root[data-theme] .ui-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+:root[data-theme] .ui-select-trigger:hover {
+  border-color: color-mix(in srgb, var(--monitor-accent) 42%, var(--dash-line));
+  background: var(--dash-inset);
+}
+
+:root[data-theme] .ui-select-trigger:focus-visible,
+:root[data-theme] .ui-input:focus-visible,
+:root[data-theme] .ui-textarea:focus-visible {
+  outline: none;
+  border-color: var(--monitor-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--monitor-accent) 18%, transparent);
+}
+
+:root[data-theme] .ui-select-content {
+  z-index: 1000;
+  min-width: var(--radix-select-trigger-width, 170px);
+  max-height: min(320px, var(--radix-select-content-available-height, 320px));
+  padding: 5px;
+  overflow: auto;
+  border: 1px solid var(--dash-line);
+  border-radius: 8px;
+  background: var(--dash-panel);
+  color: var(--dash-text);
+  box-shadow: 0 16px 34px rgba(2, 6, 12, 0.2);
+}
+
+:root[data-theme] .ui-select-item {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--dash-text);
+  cursor: pointer;
+}
+
+:root[data-theme] .ui-select-item[data-highlighted],
+:root[data-theme] .ui-select-item[data-state="checked"] {
+  outline: none;
+  background: var(--monitor-accent-soft);
+  color: var(--monitor-accent);
+}
+
+:root[data-theme] .ui-select-item-indicator {
+  color: var(--monitor-accent);
+}
+.state-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 1px 7px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--ok) 45%, transparent);
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+.node-card.warning .state-badge {
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+.node-card.offline .state-badge {
+  border-color: color-mix(in srgb, var(--alert) 45%, transparent);
+  color: var(--alert);
+  background: color-mix(in srgb, var(--alert) 12%, transparent);
+}
+.node-card.pending .state-badge {
+  border-color: var(--dash-line);
+  color: var(--dash-faint);
+  background: transparent;
+}
+.card-icon {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dash-faint);
+  cursor: pointer;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+.card-icon:first-of-type {
+  margin-left: auto;
+}
+.card-icon:hover {
+  background: var(--dash-inset);
+  color: var(--dash-text);
+}
+.card-icon.on {
+  color: var(--warn);
+}
+.card-place {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--dash-muted);
+  margin-top: -4px;
+}
+.card-place .region-flag {
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.card-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px 18px;
+}
+.mcell {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.mtop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.mlabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--dash-muted);
+  min-width: 0;
+}
+.mlabel.t-cpu svg {
+  color: var(--t-cpu);
+}
+.mlabel.t-mem svg {
+  color: var(--t-mem);
+}
+.mlabel.t-disk svg {
+  color: var(--t-disk);
+}
+.mlabel.t-net svg {
+  color: var(--t-net);
+}
+.mtop b {
+  font-weight: 600;
+  color: var(--dash-text);
+  font-size: 12.5px;
+}
+.mtop b.warn {
+  color: var(--warn);
+}
+.mtop b.alert {
+  color: var(--alert);
+}
+.mcell .mbar {
+  height: 5px;
+  flex: none;
+}
+.msub {
+  font-size: 11.5px;
+  color: var(--dash-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.card-boxes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.card-boxes > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: var(--dash-inset);
+  min-width: 0;
+}
+.card-boxes span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--dash-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-boxes span.up {
+  color: var(--up);
+}
+.card-boxes span.down {
+  color: var(--down);
+}
+.card-boxes span.warn {
+  color: var(--warn);
+}
+
+.card-net {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 18px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dash-line-soft);
+}
+.card-net > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+.card-net .mlabel {
+  font-size: 12px;
+}
+.card-net b {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--dash-text);
+}
+.strip {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 2px;
+  height: 11px;
+}
+.strip i {
+  flex: 1;
+  border-radius: 1.5px;
+  background: var(--idle);
+  min-width: 0;
+}
+.strip i.ok {
+  background: var(--ok);
+}
+.strip i.fair {
+  background: var(--fair);
+}
+.strip i.warn {
+  background: var(--warn);
+}
+.strip i.alert {
+  background: var(--alert);
+}
+
+/* ---------------------------------------------------------- visitor line */
+.visitor-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 22px 20px 0;
+  padding: 12px;
+  border-top: 1px solid var(--dash-line);
+  font-size: 12.5px;
+  color: var(--dash-muted);
+}
+.visitor-bar i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+}
+.visitor-bar b {
+  color: var(--dash-text);
+  font-weight: 600;
+}
+.visitor-bar em {
+  font-style: normal;
+  color: var(--dash-line);
+}
+
+/* keep the table view legible against the new surface */
+.table-scroll,
+.fleet-table {
+  background: transparent;
+}
+.node-grid + .pager,
+main > footer {
+  color: var(--dash-faint);
+}
+
+/* -------------------------------------------------- globe in compact mode */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.globe-panel {
+  padding: 12px 168px 12px 12px;
+}
+.globe-panel .geo-overview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 296px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: visible;
+}
+.globe-panel .geo-overview::before,
+.globe-panel .geo-overview::after {
+  content: none;
+}
+.globe-panel .globe-surface {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 296px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+.globe-panel .globe-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 296px;
+}
+.globe-panel .globe-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+.globe-panel .globe-message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12.5px;
+  color: var(--dash-faint);
+}
+.globe-panel .globe-controls {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--dash-line);
+  background: color-mix(in srgb, var(--dash-panel) 82%, transparent);
+  z-index: 3;
+}
+.globe-panel .globe-controls > span {
+  display: none;
+}
+.globe-panel .globe-controls button {
+  width: 26px;
+  height: 26px;
+  min-height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dash-muted);
+  box-shadow: none;
+}
+.globe-panel .globe-controls button:hover {
+  background: var(--dash-inset);
+  color: var(--dash-text);
+}
+.globe-panel .globe-controls::before {
+  content: "自动旋转";
+  font-size: 11.5px;
+  color: var(--dash-muted);
+}
+.geo-overview.is-paused .globe-controls::before {
+  content: "已暂停";
+}
+.globe-panel .globe-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px;
+  border-radius: 5px;
+  border: 1px solid var(--dash-line);
+  background: color-mix(in srgb, var(--dash-panel) 88%, transparent);
+  cursor: pointer;
+  min-height: 0;
+  box-shadow: none;
+  z-index: 2;
+}
+.globe-panel .globe-marker img {
+  width: 22px;
+  height: 15px;
+  border-radius: 2px;
+  display: block;
+}
+.globe-panel .globe-marker b {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0 3px;
+  color: var(--dash-text);
+  font-variant-numeric: tabular-nums;
+}
+.globe-panel .globe-marker.offline {
+  border-color: color-mix(in srgb, var(--alert) 55%, var(--dash-line));
+}
+.globe-panel .globe-marker.pending {
+  border-color: var(--dash-faint);
+}
+@media (max-width: 1180px) {
+  .globe-panel {
+    padding: 12px;
+  }
+  .globe-panel .globe-controls {
+    top: 4px;
+    right: 4px;
+  }
+}
+
+/* The top band is a fixed-height strip: the sphere fills its half instead of
+   dictating how tall the whole dashboard header becomes. */
+.dash-top {
+  height: 296px;
+  overflow: hidden;
+  align-items: stretch;
+}
+.dash-top > * {
+  min-height: 0;
+  min-width: 0;
+}
+.stat-grid {
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  align-content: stretch;
+}
+.stat-card {
+  min-height: 0;
+}
+.globe-panel,
+.globe-panel .geo-overview,
+.globe-panel .globe-surface,
+.globe-panel .globe-canvas {
+  height: 100%;
+  min-height: 0;
+}
+@media (max-width: 1180px) {
+  .dash-top {
+    height: auto;
+    overflow: visible;
+  }
+  .globe-panel {
+    height: 260px;
+  }
+}
+@media (max-width: 720px) {
+  .dash-top {
+    height: auto;
+  }
+  .stat-grid {
+    grid-template-rows: none;
+  }
+  .stat-card {
+    min-height: 96px;
+  }
+}
+
+/* Globe interaction polish: preserve status hierarchy and touchable targets
+   in the compact overview used by the responsive dashboard. */
+.globe-panel .globe-marker {
+  min-width: 40px;
+  min-height: 40px;
+  justify-content: center;
+  border-width: 2px;
+}
+.globe-panel .globe-marker.online {
+  border-color: color-mix(in srgb, var(--ok) 72%, var(--dash-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 16%, transparent),
+    0 4px 14px rgba(0, 0, 0, 0.28);
+  animation: globe-online-pulse 3.2s ease-in-out infinite;
+}
+.globe-panel .globe-marker.offline b {
+  background: var(--alert);
+}
+.globe-panel .globe-marker.pending b {
+  background: var(--dash-faint);
+}
+@keyframes globe-online-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 13%, transparent), 0 4px 14px rgba(0, 0, 0, 0.22); }
+  50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--ok) 22%, transparent), 0 4px 16px rgba(0, 0, 0, 0.25); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .globe-panel .globe-marker.online { animation: none; }
+}
+.globe-panel .globe-controls button {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+}
+@media (max-width: 700px) {
+  .globe-panel .globe-surface,
+  .globe-panel .globe-canvas {
+    height: 242px;
+    min-height: 242px;
+  }
+  .globe-panel .globe-controls button {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Global map and lower workspace
+
+   The globe is the map interaction itself, so give it the whole visual field
+   and reserve labels for the chosen location. The lower area reads as one
+   compact status strip instead of several unrelated horizontal rules.
+   ------------------------------------------------------------------------ */
+@media (min-width: 981px) {
+  :root[data-theme] .dash-top {
+    height: 320px;
+    overflow: hidden;
+  }
+}
+
+/* Flat map refinement: it shares the globe's quiet surface, while retaining
+   the precision of an atlas projection for locating node groups. */
+:root[data-theme] .flat-network-map {
+  isolation: isolate;
+  border: 0;
+  border-radius: 12px;
+  background: var(--dash-globe-field);
+  box-shadow: inset 0 0 0 1px var(--dash-line-soft);
+}
+
+:root[data-theme] .flat-map-grid line {
+  stroke: var(--dash-line);
+  stroke-width: 0.8;
+  stroke-opacity: 0.48;
+}
+
+:root[data-theme] .flat-map-grid line:nth-child(3),
+:root[data-theme] .flat-map-grid line:nth-child(8) {
+  stroke: var(--dash-line);
+  stroke-opacity: 0.72;
+}
+
+:root[data-theme] .flat-map-land path {
+  fill: oklch(0.84 0.032 190);
+  stroke: oklch(0.59 0.042 205 / 0.72);
+  stroke-width: 1.1;
+}
+
+:root[data-theme="dark"] .flat-map-land path {
+  fill: oklch(0.34 0.032 205);
+  stroke: oklch(0.65 0.035 205 / 0.48);
+}
+
+:root[data-theme] .flat-map-frame {
+  stroke: transparent;
+}
+
+:root[data-theme] .flat-network-map .map-view-switcher {
+  top: 14px;
+  right: 14px;
+  padding: 3px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dash-field);
+  box-shadow: none;
+}
+
+:root[data-theme] .flat-network-map .map-view-switcher button {
+  min-height: 28px;
+  border-radius: 5px;
+  color: var(--dash-muted);
+  font-weight: 550;
+}
+
+:root[data-theme] .flat-network-map .map-view-switcher button.active {
+  background: var(--dash-panel);
+  color: var(--dash-text);
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .flat-map-heading {
+  top: 18px;
+  left: 18px;
+  gap: 5px;
+}
+
+:root[data-theme] .flat-map-heading span {
+  color: var(--dash-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme] .flat-map-heading small {
+  color: var(--dash-faint);
+  font-size: 10px;
+}
+
+:root[data-theme] .flat-map-node {
+  --flat-map-node-color: var(--dash-faint);
+}
+
+:root[data-theme] .flat-map-node.online {
+  --flat-map-node-color: var(--ok);
+}
+
+:root[data-theme] .flat-map-node.offline {
+  --flat-map-node-color: var(--alert);
+}
+
+:root[data-theme] .flat-map-node-ring {
+  fill: var(--dash-panel);
+  stroke: var(--flat-map-node-color);
+  stroke-width: 1.4;
+  transition: stroke-width 150ms ease-out, filter 150ms ease-out;
+}
+
+:root[data-theme] .flat-map-node-dot {
+  fill: var(--flat-map-node-color);
+}
+
+:root[data-theme] .flat-map-node.online .flat-map-node-ring,
+:root[data-theme] .flat-map-node.offline .flat-map-node-ring {
+  stroke: var(--flat-map-node-color);
+}
+
+:root[data-theme] .flat-map-node.online .flat-map-node-dot,
+:root[data-theme] .flat-map-node.offline .flat-map-node-dot {
+  fill: var(--flat-map-node-color);
+}
+
+:root[data-theme] .flat-map-node.selected .flat-map-node-ring,
+:root[data-theme] .flat-map-node:focus-visible .flat-map-node-ring {
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--flat-map-node-color) 32%, transparent));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme] .flat-map-node:hover .flat-map-node-ring {
+    stroke-width: 2.4;
+  }
+}
+
+:root[data-theme] .flat-map-summary {
+  left: 18px;
+  bottom: 18px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme] .flat-map-summary > span {
+  color: var(--dash-faint);
+  font-size: 9px;
+  letter-spacing: 0.055em;
+}
+
+:root[data-theme] .flat-map-summary strong {
+  color: var(--dash-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+:root[data-theme] .flat-map-controls {
+  top: auto;
+  right: 14px;
+  bottom: 14px;
+  gap: 1px;
+  padding: 3px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--dash-panel);
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .flat-map-controls button,
+:root[data-theme] .flat-map-controls button + button,
+:root[data-theme] .flat-map-controls button:last-child {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+}
+
+:root[data-theme] .flat-map-controls button:hover:not(:disabled) {
+  background: var(--dash-field);
+  color: var(--dash-text);
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .globe-panel:has(.flat-network-map) {
+    height: 356px;
+    min-height: 356px;
+  }
+
+  :root[data-theme] .flat-network-map {
+    height: 320px;
+    min-height: 320px;
+  }
+
+  :root[data-theme] .flat-map-graphic {
+    position: absolute;
+    top: 44px;
+    height: 186px;
+    min-height: 0;
+  }
+
+  :root[data-theme] .flat-network-map .map-view-switcher {
+    top: 12px;
+    right: 12px;
+  }
+
+  :root[data-theme] .flat-map-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    left: 14px;
+    right: 14px;
+    bottom: 70px;
+    gap: 8px;
+  }
+
+  :root[data-theme] .flat-map-controls {
+    right: auto;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  :root[data-theme] .flat-map-controls button,
+  :root[data-theme] .flat-map-controls button + button,
+  :root[data-theme] .flat-map-controls button:last-child {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Online nodes share a restrained distribution signal: a dashed route and a
+   single moving point. It only renders when two or more regions are online. */
+:root[data-theme] .flat-map-flow {
+  pointer-events: none;
+}
+
+:root[data-theme] .flat-map-flow-path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ok) 64%, var(--dash-line));
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 5 9;
+  opacity: 0.72;
+}
+
+:root[data-theme] .flat-map-flow-pulse {
+  fill: var(--ok);
+  stroke: var(--dash-globe-field);
+  stroke-width: 2.2;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ok) 72%, transparent));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .flat-map-flow-pulse {
+    display: none;
+  }
+}
+
+:root[data-theme] .globe-panel {
+  min-height: 0;
+  padding: 12px;
+  background: var(--dash-field);
+  border-left-color: var(--dash-line);
+  overflow: hidden;
+}
+
+:root[data-theme] .globe-panel .geo-overview,
+:root[data-theme] .globe-panel .globe-surface,
+:root[data-theme] .globe-panel .globe-canvas {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+:root[data-theme] .globe-panel .globe-surface {
+  overflow: hidden;
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 52% 48%, color-mix(in srgb, var(--ok) 10%, transparent), transparent 58%),
+    var(--dash-globe-field);
+  box-shadow: inset 0 0 0 1px var(--dash-line);
+}
+
+:root[data-theme="dark"] .globe-panel .globe-surface {
+  background:
+    radial-gradient(circle at 52% 48%, rgb(70 151 144 / 0.14), transparent 60%),
+    var(--dash-globe-field);
+}
+
+:root[data-theme] .globe-panel .globe-controls {
+  top: 10px;
+  right: 10px;
+  gap: 2px;
+  padding: 3px 4px 3px 9px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+:root[data-theme] .globe-panel .globe-controls::before {
+  content: "拖动查看";
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme] .geo-overview.is-interacting .globe-controls::before {
+  content: "定位中";
+}
+
+:root[data-theme] .globe-panel .globe-controls button {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  border-radius: 6px;
+}
+
+:root[data-theme] .globe-panel .globe-controls button svg {
+  width: 15px;
+  height: 15px;
+}
+
+:root[data-theme] .globe-location-summary {
+  left: 12px;
+  bottom: 12px;
+  min-width: 142px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--dash-panel) 92%, transparent);
+  box-shadow: 0 4px 14px rgb(13 31 38 / 0.08);
+}
+
+:root[data-theme] .globe-location-summary > span {
+  letter-spacing: 0.055em;
+  font-size: 9px;
+}
+
+:root[data-theme] .globe-location-summary strong {
+  font-size: 13px;
+}
+
+:root[data-theme] .globe-panel .globe-marker {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme] .globe-panel .globe-marker > i {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--dash-globe-field);
+  border-radius: 50%;
+  background: var(--dash-faint);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dash-faint) 18%, transparent);
+  transition: transform 140ms ease-out, box-shadow 140ms ease-out;
+}
+
+:root[data-theme] .globe-panel .globe-marker.online > i {
+  background: var(--ok);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ok) 22%, transparent);
+}
+
+:root[data-theme] .globe-panel .globe-marker.offline > i {
+  background: var(--alert);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--alert) 18%, transparent);
+}
+
+:root[data-theme] .globe-panel .globe-marker.pending > i {
+  background: var(--dash-faint);
+}
+
+:root[data-theme] .globe-panel .globe-marker:hover > i,
+:root[data-theme] .globe-panel .globe-marker:focus-visible > i,
+:root[data-theme] .globe-panel .globe-marker.selected > i {
+  transform: scale(1.35);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 18%, transparent);
+}
+
+:root[data-theme] .globe-panel .globe-marker b {
+  position: absolute;
+  top: -2px;
+  left: calc(50% + 9px);
+  display: none;
+  min-width: 16px;
+  padding: 2px 5px;
+  border: 1px solid var(--dash-line);
+  border-radius: 999px;
+  background: var(--dash-panel);
+  color: var(--dash-text);
+  font-size: 9px;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgb(13 31 38 / 0.12);
+}
+
+:root[data-theme] .globe-panel .globe-marker.selected b {
+  display: inline-flex;
+}
+
+:root[data-theme] .globe-panel .globe-marker.selected.offline > i {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--alert) 18%, transparent);
+}
+
+:root[data-theme] .globe-panel .globe-marker.selected.pending > i {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--dash-faint) 22%, transparent);
+}
+
+:root[data-theme] .globe-legend {
+  display: none;
+}
+
+:root[data-theme] .empty {
+  min-height: 184px;
+  margin: 0 20px;
+  padding: 30px 20px;
+  border: 1px dashed var(--dash-line);
+  border-radius: 10px;
+  background: var(--dash-field);
+}
+
+:root[data-theme] .empty svg {
+  color: var(--dash-faint);
+}
+
+:root[data-theme] .pagination {
+  min-height: 48px;
+  margin: 0 20px;
+  padding: 9px 0;
+  border-top: 1px solid var(--dash-line-soft);
+  font-size: 11px;
+}
+
+:root[data-theme] .overview-foot {
+  min-height: 44px;
+  margin: 0 20px;
+  padding: 8px 0;
+  border-top-color: var(--dash-line-soft);
+}
+
+:root[data-theme] .site-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  margin: 8px 20px 0;
+  padding: 10px 0;
+  border-top: 1px solid var(--dash-line);
+}
+
+:root[data-theme] .visitor-bar {
+  justify-content: flex-start;
+  gap: 7px;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 11px;
+}
+
+:root[data-theme] .site-meta footer {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 10px;
+}
+
+@media (max-width: 980px) {
+  :root[data-theme] .globe-panel {
+    height: 292px;
+    padding: 10px;
+    border-top-color: var(--dash-line);
+  }
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .globe-panel {
+    height: 268px;
+    min-height: 268px;
+  }
+
+  :root[data-theme] .empty,
+  :root[data-theme] .pagination,
+  :root[data-theme] .overview-foot,
+  :root[data-theme] .site-meta {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  :root[data-theme] .empty {
+    min-height: 168px;
+    padding: 24px 16px;
+  }
+
+  :root[data-theme] .visitor-bar {
+    justify-content: flex-start;
+    gap: 5px 7px;
+  }
+
+  :root[data-theme] .site-meta {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  :root[data-theme] .site-meta footer {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+}
+
+/* Expanded world map for the dashboard: it keeps the global relationship of
+   the nodes visible at a glance and uses the whole panel instead of a small
+   decorative sphere. */
+:root[data-theme] .flat-network-map {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--ok) 9%, transparent), transparent 62%),
+    var(--dash-globe-field);
+}
+
+:root[data-theme="dark"] .flat-network-map {
+  background:
+    radial-gradient(circle at 50% 50%, rgb(70 151 144 / 0.13), transparent 62%),
+    var(--dash-globe-field);
+}
+
+:root[data-theme] .flat-map-graphic {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  touch-action: pan-y;
+}
+
+:root[data-theme] .flat-map-base {
+  fill: transparent;
+}
+
+:root[data-theme] .flat-map-grid line {
+  stroke: var(--dash-line);
+  stroke-width: 1;
+  stroke-opacity: 0.72;
+}
+
+:root[data-theme] .flat-map-grid line:nth-child(3),
+:root[data-theme] .flat-map-grid line:nth-child(8) {
+  stroke: color-mix(in srgb, var(--ok) 42%, var(--dash-line));
+  stroke-opacity: 0.7;
+}
+
+:root[data-theme] .flat-map-land path {
+  fill: color-mix(in srgb, var(--ok) 12%, transparent);
+  stroke: color-mix(in srgb, var(--dash-muted) 58%, transparent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+:root[data-theme="dark"] .flat-map-land path {
+  fill: rgb(71 135 140 / 0.2);
+  stroke: rgb(142 190 192 / 0.44);
+}
+
+:root[data-theme] .flat-map-frame {
+  fill: none;
+  stroke: var(--dash-line);
+  stroke-width: 1.5;
+}
+
+:root[data-theme] .flat-map-node {
+  cursor: pointer;
+  outline: none;
+}
+
+:root[data-theme] .flat-map-node-ring {
+  fill: color-mix(in srgb, var(--dash-globe-field) 78%, transparent);
+  stroke: var(--dash-faint);
+  stroke-width: 2;
+  transition: r 160ms ease-out, stroke-width 160ms ease-out;
+}
+
+:root[data-theme] .flat-map-node-dot {
+  fill: var(--dash-faint);
+}
+
+:root[data-theme] .flat-map-node.online .flat-map-node-ring {
+  stroke: var(--ok);
+}
+
+:root[data-theme] .flat-map-node.online .flat-map-node-dot {
+  fill: var(--ok);
+}
+
+:root[data-theme] .flat-map-node.offline .flat-map-node-ring {
+  stroke: var(--alert);
+}
+
+:root[data-theme] .flat-map-node.offline .flat-map-node-dot {
+  fill: var(--alert);
+}
+
+:root[data-theme] .flat-map-node.selected .flat-map-node-ring,
+:root[data-theme] .flat-map-node:hover .flat-map-node-ring,
+:root[data-theme] .flat-map-node:focus-visible .flat-map-node-ring {
+  stroke-width: 4;
+}
+
+:root[data-theme] .flat-map-node-count {
+  fill: var(--dash-text);
+  font-size: 17px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: var(--dash-globe-field);
+  stroke-width: 4px;
+}
+
+:root[data-theme] .flat-map-heading,
+:root[data-theme] .flat-map-controls,
+:root[data-theme] .flat-map-summary,
+:root[data-theme] .flat-map-status {
+  position: absolute;
+  z-index: 2;
+}
+
+:root[data-theme] .flat-map-heading {
+  top: 13px;
+  left: 15px;
+  display: grid;
+  gap: 2px;
+  pointer-events: none;
+}
+
+:root[data-theme] .flat-map-heading span {
+  color: var(--dash-faint);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+:root[data-theme] .flat-map-heading small {
+  color: var(--dash-muted);
+  font-size: 11px;
+}
+
+:root[data-theme] .flat-map-controls {
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 4px 3px 9px;
+  border: 1px solid var(--dash-line);
+  border-radius: 8px;
+  background: var(--dash-panel);
+}
+
+:root[data-theme] .flat-map-controls > span {
+  margin-right: 2px;
+  color: var(--dash-faint);
+  font-size: 10px;
+}
+
+:root[data-theme] .flat-map-controls button {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dash-muted);
+  box-shadow: none;
+}
+
+:root[data-theme] .flat-map-controls button:hover {
+  background: var(--dash-inset);
+  color: var(--dash-text);
+}
+
+:root[data-theme] .flat-map-controls button svg {
+  width: 15px;
+  height: 15px;
+}
+
+:root[data-theme] .flat-map-summary {
+  left: 12px;
+  bottom: 12px;
+  display: grid;
+  gap: 2px;
+  min-width: 132px;
+  padding: 9px 11px;
+  border: 1px solid var(--dash-line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--dash-panel) 92%, transparent);
+  box-shadow: 0 4px 14px rgb(13 31 38 / 0.08);
+  pointer-events: none;
+}
+
+:root[data-theme] .flat-map-summary > span {
+  color: var(--dash-faint);
+  font-size: 9px;
+  letter-spacing: 0.055em;
+}
+
+:root[data-theme] .flat-map-summary strong {
+  color: var(--dash-text);
+  font-size: 13px;
+}
+
+:root[data-theme] .flat-map-summary small,
+:root[data-theme] .flat-map-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--dash-muted);
+  font-size: 10px;
+}
+
+:root[data-theme] .flat-map-summary .state-dot,
+:root[data-theme] .flat-map-status .state-dot {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+}
+
+:root[data-theme] .flat-map-status {
+  right: 14px;
+  bottom: 15px;
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .flat-map-heading {
+    top: 12px;
+    left: 13px;
+  }
+
+  :root[data-theme] .flat-map-controls > span {
+    display: none;
+  }
+
+  :root[data-theme] .flat-map-controls {
+    padding-left: 4px;
+  }
+
+  :root[data-theme] .flat-map-summary {
+    left: 10px;
+    bottom: 10px;
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Calm operational canvas
+
+   The dashboard is viewed for long stretches. Give the content a quiet,
+   opaque field and reserve contrast for states, readings, and node markers.
+   These selectors sit last so older glass and grid experiments cannot leak
+   through when the theme changes.
+   ------------------------------------------------------------------------ */
+:root[data-theme],
+:root[data-theme] body,
+:root[data-theme] #root,
+:root[data-theme] .app-shell,
+:root[data-theme] .main-shell {
+  background: var(--dash-bg);
+}
+
+:root[data-theme] body::before {
+  background: var(--dash-bg);
+  background-image: none;
+  filter: none;
+}
+
+:root[data-theme] .dash-top {
+  background: var(--dash-field);
+  border-bottom-color: var(--dash-line);
+  box-shadow: inset 0 -1px 0 rgb(19 39 49 / 0.025);
+}
+
+:root[data-theme] .topbar,
+:root[data-theme] .sidebar,
+:root[data-theme] .stat-card,
+:root[data-theme] .node-card,
+:root[data-theme] .fleet-tools .ui-search,
+:root[data-theme] .fleet-tools .segmented,
+:root[data-theme] .ui-input,
+:root[data-theme] .ui-textarea,
+:root[data-theme] .ui-select-trigger {
+  background: var(--dash-panel);
+  border-color: var(--dash-line);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme] .stat-card,
+:root[data-theme] .node-card {
+  border-radius: 10px;
+  box-shadow: var(--dash-elevation);
+  transition: border-color 150ms ease-out, box-shadow 150ms ease-out,
+    background-color 150ms ease-out;
+}
+
+:root[data-theme] .stat-card:hover,
+:root[data-theme] .node-card:hover {
+  border-color: color-mix(in oklch, var(--ok) 28%, var(--dash-line));
+  box-shadow: var(--dash-elevation-hover);
+  transform: none;
+}
+
+:root[data-theme] .globe-panel {
+  background: var(--dash-field);
+  border-left-color: var(--dash-line);
+  box-shadow: none;
+}
+
+:root[data-theme] .globe-panel .globe-surface {
+  background: var(--dash-globe-field);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--dash-line);
+}
+
+:root[data-theme] .globe-panel .globe-controls {
+  background: var(--dash-panel);
+  border-color: var(--dash-line);
+  box-shadow: var(--dash-elevation);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme] .globe-panel .globe-controls button {
+  color: var(--dash-muted);
+}
+
+:root[data-theme] .globe-panel .globe-controls button:hover:not(:disabled) {
+  background: var(--dash-inset);
+  color: var(--dash-text);
+}
+
+:root[data-theme] .globe-panel .globe-controls::before {
+  content: "拖动旋转";
+  color: var(--dash-faint);
+}
+
+:root[data-theme] .geo-overview.is-rotating .globe-controls::before {
+  content: "自动旋转";
+}
+
+:root[data-theme] .geo-overview.is-interacting .globe-controls::before {
+  content: "拖动中";
+}
+
+:root[data-theme] .globe-location-summary {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 3;
+  display: grid;
+  gap: 2px;
+  min-width: 104px;
+  padding: 8px 10px;
+  border: 1px solid var(--dash-line);
+  border-radius: 8px;
+  background: var(--dash-panel);
+  box-shadow: var(--dash-elevation);
+  color: var(--dash-text);
+  pointer-events: none;
+}
+
+:root[data-theme] .globe-location-summary > span {
+  color: var(--dash-faint);
+  font-size: 10px;
+}
+
+:root[data-theme] .globe-location-summary strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+:root[data-theme] .globe-location-summary small {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--dash-muted);
+  font-size: 10px;
+}
+
+:root[data-theme] .globe-location-summary .state-dot {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+}
+
+:root[data-theme] .globe-panel .globe-marker {
+  border-color: var(--dash-globe-field);
+  background: var(--dash-panel);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--ok) 20%, transparent),
+    0 4px 10px rgb(9 20 26 / 0.15);
+  animation: none;
+}
+
+:root[data-theme] .globe-panel .globe-marker.online {
+  border-color: color-mix(in oklch, var(--ok) 64%, var(--dash-globe-field));
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--ok) 17%, transparent),
+    0 4px 10px rgb(9 20 26 / 0.15);
+  animation: none;
+}
+
+:root[data-theme="dark"] .dash-top {
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.045);
+}
+
+:root[data-theme="dark"] .globe-panel .globe-surface {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.075);
+}
+
+@media (max-width: 980px) {
+  :root[data-theme] .globe-panel {
+    border-left: 0;
+    border-top: 1px solid var(--dash-line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .globe-panel .globe-marker.online {
+    animation: none;
+  }
+}
+
+/* the rotate control belongs in the corner, not floating over the sphere */
+.globe-panel .geo-overview .globe-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  width: auto;
+  justify-content: flex-end;
+}
+
+/* The compact globe uses the sphere and contour layer as its only spatial
+   context; disable the legacy animated orbit pseudo-element. */
+.geo-overview .globe-surface::after {
+  content: none;
+  animation: none;
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------------------
+   glass.css still owns the old shell with `:root[data-theme="dark"] .topbar`
+   selectors, which outrank a bare class. These match that weight and land
+   later, so the dashboard shell wins without resorting to !important.
+   ------------------------------------------------------------------------ */
+:root[data-theme] .app-shell {
+  display: block;
+  background: var(--dash-bg);
+}
+:root[data-theme] .main-shell {
+  margin-left: 0;
+  background: transparent;
+}
+:root[data-theme] .sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 250px;
+  height: 100dvh;
+  transform: translateX(-101%);
+  transition: transform 0.2s ease;
+  background: var(--dash-panel);
+  border-right: 1px solid var(--dash-line);
+  border-bottom: 0;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  z-index: 60;
+  backdrop-filter: none;
+}
+:root[data-theme] .sidebar.open {
+  transform: none;
+}
+:root[data-theme] .topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 60px;
+  padding: 0 24px;
+  background: var(--dash-panel);
+  border-bottom: 1px solid var(--dash-line);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-theme] main {
+  max-width: none;
+  padding: 0 0 28px;
+}
+:root[data-theme] .top-actions .icon-button {
+  display: inline-flex;
+  width: auto;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 9px;
+  gap: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dash-muted);
+  box-shadow: none;
+}
+:root[data-theme] .top-actions .icon-button:hover:not(:disabled) {
+  background: var(--dash-inset);
+  color: var(--dash-text);
+}
+@media (max-width: 900px) {
+  :root[data-theme] .topbar {
+    padding: 0 14px;
+  }
+}
+
+/* Below the two-column breakpoint the sphere gets the full width and the
+   legend sits underneath it, instead of squeezing into a 170px column. */
+@media (max-width: 1180px) {
+  .globe-panel {
+    flex-direction: column;
+    gap: 12px;
+    height: auto;
+    padding: 14px;
+  }
+  .globe-panel .geo-overview {
+    width: 100%;
+    height: 226px;
+    min-height: 226px;
+    flex: none;
+  }
+  .globe-panel .globe-surface,
+  .globe-panel .globe-canvas {
+    height: 226px;
+    min-height: 226px;
+  }
+  .globe-legend {
+    width: 100%;
+  }
+  .globe-legend li {
+    grid-template-columns: 9px auto auto;
+  }
+}
+
+/* Cascade lock for the final loaded rules. */
+:root[data-theme] .sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 240px;
+  height: 100dvh;
+  transform: translateX(-101%);
+  visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--dash-panel);
+  border: 0;
+  border-right: 1px solid var(--dash-line);
+  padding: 22px 14px 14px;
+  gap: 18px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-theme] .sidebar.open {
+  transform: none;
+  visibility: visible;
+}
+:root[data-theme] .sidebar nav {
+  flex-direction: column;
+}
+:root[data-theme] .sidebar .workspace-label {
+  display: flex;
+}
+:root[data-theme] .sidebar .deployment {
+  display: flex;
+}
+:root[data-theme] .sidebar-bottom {
+  margin-top: auto;
+}
+:root[data-theme] .sidebar-backdrop {
+  display: block;
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 12, 0.5);
+  z-index: 55;
+}
+:root[data-theme] .app-shell,
+:root[data-theme] .main-shell,
+html,
+body,
+#root,
+body::before {
+  background: var(--dash-bg);
+  background-image: none;
+}
+:root[data-theme] body::before {
+  background: var(--dash-bg);
+  background-image: none;
+  filter: none;
+}
+:root[data-theme] .topbar {
+  background: var(--dash-panel);
+  border-bottom-color: var(--dash-line);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-theme] dialog {
+  border-radius: 8px;
+  background: var(--dash-panel);
+  border-color: var(--dash-line);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+:root[data-theme] dialog::backdrop {
+  background: rgba(2, 6, 12, 0.5);
+}
+:root[data-theme] .modal-head {
+  padding: 16px 20px;
+  background: var(--dash-panel);
+  border-bottom-color: var(--dash-line);
+  backdrop-filter: none;
+}
+:root[data-theme] .field > span {
+  font-size: 13px;
+}
+:root[data-theme] .field input,
+:root[data-theme] .field select,
+:root[data-theme] .field textarea {
+  font-size: 14px;
+  border-radius: 8px;
+  background: var(--dash-panel);
+  border-color: var(--dash-line);
+}
+
+@media (max-width: 720px) {
+  :root[data-theme] .sidebar {
+    width: min(240px, calc(100vw - 28px));
+  }
+  :root[data-theme] dialog {
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+  }
+}
+
+/* macOS-inspired translucent surfaces. Keep the effect restrained so data
+   remains legible over the neutral dashboard canvas. */
+:root[data-theme] .stat-card,
+:root[data-theme] .node-card {
+  background: color-mix(in srgb, var(--dash-panel) 64%, transparent);
+  border-color: color-mix(in srgb, var(--dash-line) 72%, transparent);
+  border-radius: 14px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  backdrop-filter: blur(18px) saturate(135%);
+}
+:root[data-theme="dark"] .stat-card,
+:root[data-theme="dark"] .node-card {
+  background: color-mix(in srgb, var(--dash-panel) 68%, transparent);
+  border-color: color-mix(in srgb, var(--dash-line) 82%, transparent);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+:root[data-theme] .stat-card:hover,
+:root[data-theme] .node-card:hover {
+  border-color: color-mix(in srgb, var(--monitor-accent) 42%, var(--dash-line));
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+:root[data-theme="dark"] .stat-card:hover,
+:root[data-theme="dark"] .node-card:hover {
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Keep the globe beside the summary cards on desktop and most tablets. */
+@media (min-width: 981px) and (max-width: 1180px) {
+  .dash-top {
+    height: 296px;
+    overflow: visible;
+    grid-template-columns: minmax(0, 1.12fr) minmax(300px, 0.88fr);
+  }
+  .globe-panel {
+    flex-direction: row;
+    gap: 0;
+    height: 100%;
+    padding: 12px 168px 12px 12px;
+    border-left: 1px solid var(--dash-line);
+    border-top: 0;
+    overflow: visible;
+  }
+  .globe-panel .geo-overview,
+  .globe-panel .globe-surface,
+  .globe-panel .globe-canvas {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+  .globe-legend {
+    position: absolute;
+    right: 24px;
+    top: 50%;
+    width: auto;
+    transform: translateY(-50%);
+    flex-direction: column;
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 980px) {
+  .dash-top {
+    height: auto;
+    overflow: visible;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+  }
+  .globe-panel {
+    border-left: 0;
+    border-top: 1px solid var(--dash-line);
+  }
+}
+
+/* The empty state and footer belong to the same dashboard canvas; keep legacy
+   glass fills from turning the lower half of the page into a white block. */
+:root[data-theme] .empty,
+:root[data-theme] .table-scroll,
+:root[data-theme] .fleet-table,
+:root[data-theme] main > footer {
+  background: transparent;
+}
+
+/* Keep the visualization surface open so the sphere is never clipped by a
+   card background or the fixed-height overview strip. */
+:root[data-theme] .globe-panel {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--dash-line) 72%, transparent);
+  box-shadow: none;
+  overflow: visible;
+}
+
+@media (max-width: 560px) {
+  :root[data-theme] .stat-card,
+  :root[data-theme] .node-card,
+  :root[data-theme] .globe-panel {
+    -webkit-backdrop-filter: blur(12px) saturate(125%);
+    backdrop-filter: blur(12px) saturate(125%);
+  }
+}
+
+/* Final compact-surface corrections. These rules intentionally sit at the
+   end of the cascade so the legacy glass breakpoints cannot reintroduce the
+   clipped globe or opaque white blocks. */
+:root[data-theme="light"] .topbar,
+:root[data-theme="light"] .sidebar,
+:root[data-theme="light"] .stat-card,
+:root[data-theme="light"] .node-card,
+:root[data-theme="light"] .fleet-tools .ui-search,
+:root[data-theme="light"] .fleet-tools .segmented,
+:root[data-theme="light"] .ui-input,
+:root[data-theme="light"] .ui-textarea,
+:root[data-theme="light"] .ui-select-trigger {
+  background: color-mix(in srgb, #ffffff 52%, var(--dash-bg));
+}
+
+:root[data-theme="light"] .stat-card,
+:root[data-theme="light"] .node-card {
+  border-color: color-mix(in srgb, #ffffff 60%, var(--dash-line));
+}
+
+:root[data-theme] main {
+  min-height: calc(100dvh - 60px);
+  overflow-x: clip;
+}
+
+:root[data-theme] .dash-top {
+  overflow: visible;
+}
+
+:root[data-theme] .globe-panel,
+:root[data-theme] .globe-panel .geo-overview,
+:root[data-theme] .globe-panel .globe-surface,
+:root[data-theme] .globe-panel .globe-canvas {
+  overflow: visible;
+}
+
+:root[data-theme] main > footer {
+  margin: 24px 20px 0;
+  padding: 14px 0 6px;
+  border-top: 1px solid var(--dash-line);
+  background: transparent;
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .dash-top {
+    padding: 10px;
+  }
+
+  :root[data-theme] .globe-panel {
+    min-height: 286px;
+    height: auto;
+    padding: 10px;
+  }
+
+  :root[data-theme] .globe-panel .geo-overview,
+  :root[data-theme] .globe-panel .globe-surface,
+  :root[data-theme] .globe-panel .globe-canvas {
+    height: 250px;
+    min-height: 250px;
+  }
+
+  :root[data-theme] main > footer {
+    margin: 18px 14px 0;
+    padding-top: 12px;
+  }
+}
+
+/* Keep the geographic view dominant on wide dashboards. The metric deck is
+   still present, but the map has enough horizontal room to read as a world. */
+@media (min-width: 1181px) {
+  :root[data-theme] .dash-top {
+    grid-template-columns: minmax(460px, 0.68fr) minmax(0, 1.32fr);
+  }
+}
+
+@media (max-width: 720px) {
+  :root[data-theme] .dash-top {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+
+  :root[data-theme] .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    padding: 0;
+    gap: 10px;
+  }
+
+  :root[data-theme] .stat-card {
+    min-width: 0;
+    min-height: 96px;
+    padding: 13px;
+  }
+}
+
+/* The two map projections share one switcher. It is quiet by default and
+   becomes the only bright control when the user changes the world view. */
+:root[data-theme] .map-view-switcher {
+  position: absolute;
+  z-index: 4;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--dash-line);
+  border-radius: 8px;
+  background: var(--dash-panel);
+}
+
+:root[data-theme] .map-view-switcher button {
+  min-height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--dash-faint);
+  font-size: 10px;
+  box-shadow: none;
+}
+
+:root[data-theme] .map-view-switcher button:hover {
+  color: var(--dash-text);
+  background: var(--dash-inset);
+}
+
+:root[data-theme] .map-view-switcher button.active {
+  background: color-mix(in srgb, var(--ok) 15%, var(--dash-inset));
+  color: var(--ok);
+}
+
+:root[data-theme] .flat-map-controls {
+  top: 50px;
+}
+
+:root[data-theme] .globe-network-heading {
+  position: absolute;
+  z-index: 3;
+  top: 14px;
+  left: 15px;
+  display: grid;
+  gap: 2px;
+  pointer-events: none;
+}
+
+:root[data-theme] .globe-network-heading span {
+  color: var(--dash-faint);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+:root[data-theme] .globe-network-heading small {
+  color: var(--dash-muted);
+  font-size: 11px;
+}
+
+:root[data-theme] .globe-panel .globe-controls {
+  top: 50px;
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .map-view-switcher {
+    top: 8px;
+    right: 8px;
+  }
+
+  :root[data-theme] .map-view-switcher button {
+    min-height: 25px;
+    padding: 0 7px;
+  }
+
+  :root[data-theme] .flat-map-controls,
+  :root[data-theme] .globe-panel .globe-controls {
+    top: 46px;
+    right: 8px;
+  }
+
+  :root[data-theme] .globe-network-heading {
+    top: 12px;
+    left: 13px;
+  }
+}
+
+/* Status is more useful than a large placeholder dash when a new fleet has
+   not produced its first sample yet. Keep the card rhythm stable either way. */
+:root[data-theme] .stat-placeholder {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  color: var(--dash-faint);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+:root[data-theme] .stat-placeholder::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--dash-faint);
+}
+
+/* Keep compact map controls easy to reach without increasing their visual
+   density. The invisible hit area serves touch while the visible controls
+   remain proportionate to the map. */
+:root[data-theme] .map-view-switcher button,
+:root[data-theme] .flat-map-controls button,
+:root[data-theme] .globe-panel .globe-controls button {
+  position: relative;
+}
+
+@media (pointer: coarse) {
+  :root[data-theme] .map-view-switcher button::after,
+  :root[data-theme] .flat-map-controls button::after,
+  :root[data-theme] .globe-panel .globe-controls button::after {
+    position: absolute;
+    content: "";
+    inset: -7px -5px;
+  }
+}
+
+:root[data-theme] .map-view-switcher button:focus-visible,
+:root[data-theme] .flat-map-controls button:focus-visible,
+:root[data-theme] .globe-panel .globe-controls button:focus-visible {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .fleet-tools .ui-search input,
+  :root[data-theme] .ui-input,
+  :root[data-theme] .ui-textarea {
+    font-size: 16px;
+  }
+}
+
+/* Offline cards keep their last known reading visible, but make the staleness
+   explicit so the dashboard never presents old values as live telemetry. */
+:root[data-theme] .card-stale-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -2px;
+  padding: 6px 8px;
+  border: 1px solid var(--dash-line-soft);
+  border-radius: 7px;
+  color: var(--dash-muted);
+  background: var(--dash-inset);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+:root[data-theme] .card-stale-note i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--alert);
+}
+
+:root[data-theme] .node-card.pending .card-stale-note i {
+  background: var(--dash-faint);
+}
+
+:root[data-theme] .mtop b.stale,
+:root[data-theme] .card-net b.stale {
+  color: var(--dash-muted);
+}
+
+:root[data-theme] .node-card.offline .card-boxes,
+:root[data-theme] .node-card.pending .card-boxes,
+:root[data-theme] .node-card.offline .card-net,
+:root[data-theme] .node-card.pending .card-net {
+  opacity: 0.78;
+}
+
+/* State already has a dot, badge, and stale note. Remove the inherited green
+   top rule so offline cards do not send contradictory health signals. */
+:root[data-theme] .node-card::before {
+  content: none;
+}
+
+:root[data-theme] .node-card.offline,
+:root[data-theme] .node-card.pending,
+:root[data-theme] .node-card.warning {
+  border-color: var(--dash-line);
+}
+
+:root[data-theme] .node-card.offline:hover {
+  border-color: color-mix(in srgb, var(--alert) 45%, var(--dash-line));
+}
+
+:root[data-theme] .node-card.warning:hover {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--dash-line));
+}
+
+/* Network flow needs a direction, not just two coloured rates. Keep each
+   reading compact while making the server-to-internet relationship explicit. */
+:root[data-theme] .card-boxes > .traffic-flow {
+  gap: 3px;
+  padding-left: 8px;
+  border-inline-start: 2px solid var(--dash-faint);
+}
+
+:root[data-theme] .card-boxes > .traffic-flow.outbound {
+  border-inline-start-color: var(--up);
+}
+
+:root[data-theme] .card-boxes > .traffic-flow.inbound {
+  border-inline-start-color: var(--down);
+}
+
+:root[data-theme] .traffic-flow .traffic-flow-label {
+  gap: 4px;
+  color: var(--dash-muted);
+  font-size: 10.5px;
+}
+
+:root[data-theme] .traffic-flow.outbound .traffic-flow-label svg,
+:root[data-theme] .traffic-flow.outbound strong {
+  color: var(--up);
+}
+
+:root[data-theme] .traffic-flow.inbound .traffic-flow-label svg,
+:root[data-theme] .traffic-flow.inbound strong {
+  color: var(--down);
+}
+
+:root[data-theme] .traffic-flow strong {
+  overflow: hidden;
+  color: var(--dash-text);
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-theme] .traffic-flow small {
+  overflow: hidden;
+  color: var(--dash-faint);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The light theme uses opaque tonal steps instead of layered white glass.
+   This keeps the hierarchy visible on bright displays without adding glare. */
+:root[data-theme="light"] .stat-card,
+:root[data-theme="light"] .node-card {
+  background: var(--dash-panel);
+  border-color: var(--dash-line);
+  box-shadow: var(--dash-elevation);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-theme="light"] .stat-card:hover,
+:root[data-theme="light"] .node-card:hover {
+  border-color: color-mix(in oklch, var(--ok) 36%, var(--dash-line));
+  box-shadow: var(--dash-elevation-hover);
+}
+
+:root[data-theme="light"] .flat-network-map {
+  background: oklch(0.974 0.012 205);
+  border-color: var(--dash-line);
+}
+
+:root[data-theme="light"] .flat-map-grid line {
+  stroke: oklch(0.79 0.02 205);
+  stroke-opacity: 0.62;
+}
+
+:root[data-theme="light"] .flat-map-land path {
+  fill: oklch(0.884 0.035 185);
+  stroke: oklch(0.62 0.04 205);
+  stroke-width: 1.25;
+}
+
+:root[data-theme="light"] .globe-panel .globe-surface {
+  background: oklch(0.974 0.012 205);
+  box-shadow: inset 0 0 0 1px var(--dash-line);
+}
+
+:root[data-theme] .globe-panel .globe-controls .rotation-speed {
+  width: 36px;
+  padding: 0;
+  color: var(--dash-muted);
+  font-size: 10px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sidebar: one calm navigation rail instead of a pile of bordered controls.
+   The selected section carries the accent while the rest stays quiet. */
+:root[data-theme] .sidebar {
+  width: 244px;
+  gap: 0;
+  padding: 20px 14px 14px;
+  box-shadow: 10px 0 30px color-mix(in srgb, var(--dash-text) 11%, transparent);
+}
+
+:root[data-theme] .sidebar .brand {
+  margin: 2px 7px 20px;
+  padding-bottom: 19px;
+  border-bottom: 1px solid var(--dash-line-soft);
+}
+
+:root[data-theme] .sidebar .brand > span:last-child {
+  color: var(--dash-text);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+:root[data-theme] .sidebar .brand small {
+  margin-top: 4px;
+  color: var(--dash-faint);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.075em;
+}
+
+:root[data-theme] .sidebar .workspace-label {
+  align-items: center;
+  margin: 0 7px 10px;
+  padding: 0 3px;
+  color: var(--dash-faint);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme] .sidebar .workspace-label span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, var(--dash-inset));
+  font-size: 10px;
+  font-weight: 700;
+}
+
+:root[data-theme] .sidebar nav {
+  gap: 3px;
+}
+
+:root[data-theme] .sidebar nav button {
+  position: relative;
+  min-height: 42px;
+  padding: 9px 11px;
+  border-color: transparent;
+  border-radius: 9px;
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-weight: 600;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+:root[data-theme] .sidebar nav button:hover {
+  border-color: color-mix(in srgb, var(--dash-line) 75%, var(--dash-text));
+  background: color-mix(in srgb, var(--dash-inset) 78%, var(--dash-panel));
+  color: var(--dash-text);
+}
+
+:root[data-theme] .sidebar nav button.selected {
+  border-color: color-mix(in srgb, var(--ok) 22%, var(--dash-line));
+  background: color-mix(in srgb, var(--ok) 13%, var(--dash-inset));
+  color: var(--ok);
+  box-shadow: inset 3px 0 0 var(--ok);
+}
+
+:root[data-theme] .sidebar nav button:active,
+:root[data-theme] .sidebar .account-button:active {
+  transform: scale(0.98);
+}
+
+:root[data-theme] .sidebar nav button:focus-visible,
+:root[data-theme] .sidebar .account-button:focus-visible {
+  outline: 2px solid var(--ok);
+  outline-offset: 2px;
+}
+
+:root[data-theme] .sidebar nav button small {
+  min-width: 19px;
+  padding: 2px 5px;
+  color: var(--dash-muted);
+  background: var(--dash-panel);
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme] .sidebar-bottom {
+  gap: 9px;
+  padding-top: 14px;
+  border-top: 1px solid var(--dash-line-soft);
+}
+
+:root[data-theme] .sidebar .deployment {
+  min-height: 52px;
+  gap: 9px;
+  padding: 9px 10px;
+  border-color: var(--dash-line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--dash-inset) 74%, var(--dash-panel));
+}
+
+:root[data-theme] .sidebar .deployment > span:nth-child(2) {
+  color: var(--dash-text);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+:root[data-theme] .sidebar .deployment small {
+  margin-top: 3px;
+  color: var(--dash-faint);
+  font-size: 10px;
+}
+
+:root[data-theme] .sidebar .cloud-mark {
+  width: 25px;
+  color: var(--warn);
+}
+
+:root[data-theme] .sidebar .account-button {
+  min-height: 38px;
+  margin: 0;
+  padding: 8px 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--dash-muted);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+:root[data-theme] .sidebar .account-button:hover {
+  border-color: var(--dash-line);
+  background: var(--dash-inset);
+  color: var(--dash-text);
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .sidebar {
+    width: min(82vw, 280px);
+  }
+}
+
+/* The fleet search is a single field. The shared input primitive used to
+   retain its own border inside this shell, which read as a second, accidental
+   input box on wide screens. */
+:root[data-theme] .fleet-tools .ui-search {
+  width: min(264px, 100%);
+  height: 40px;
+  padding: 0 11px;
+  gap: 9px;
+  border-radius: 10px;
+  background: var(--dash-panel);
+  transition: border-color 150ms ease, box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+
+:root[data-theme] .fleet-tools .ui-search:focus-within {
+  border-color: color-mix(in srgb, var(--ok) 56%, var(--dash-line));
+  background: color-mix(in srgb, var(--dash-panel) 92%, var(--dash-inset));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 16%, transparent);
+}
+
+:root[data-theme] .fleet-tools .ui-search .ui-input,
+:root[data-theme] .fleet-tools .ui-search .ui-input:focus-visible {
+  width: 100%;
+  min-height: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:root[data-theme] .fleet-tools .ui-search > .icon-button {
+  width: 26px;
+  height: 26px;
+  min-height: 26px;
+  padding: 5px;
+  border-radius: 6px;
+  color: var(--dash-faint);
+}
+
+:root[data-theme] .fleet-tools .ui-search > .icon-button:hover {
+  background: var(--dash-inset);
+  color: var(--dash-text);
+}
+
+:root[data-theme] .fleet-tools .segmented {
+  min-height: 40px;
+  border-radius: 10px;
+}
+
+:root[data-theme] .fleet-tools .segmented .icon-button {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+}
+
+/* When a filtered result leaves only one card, keep the bottom metadata as a
+   compact bar at the base of the viewport instead of exposing a large blank
+   canvas below it. It flows after long lists without becoming sticky. */
+:root[data-theme] main {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 60px);
+  padding-bottom: 0;
+}
+
+:root[data-theme] .site-meta {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 52px;
+  margin: auto 0 0;
+  padding: 0 20px;
+  background: color-mix(in srgb, var(--dash-panel) 80%, var(--dash-field));
+  border-top: 1px solid var(--dash-line);
+}
+
+:root[data-theme] .visitor-bar,
+:root[data-theme] .site-meta footer {
+  min-height: 34px;
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .fleet-tools .ui-search {
+    width: 100%;
+  }
+
+  :root[data-theme] .site-meta {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    min-height: 62px;
+    padding: 7px 14px;
+  }
+
+  :root[data-theme] .visitor-bar,
+  :root[data-theme] .site-meta footer {
+    min-height: 22px;
+  }
+}
+
+/* -----------------------------------------------------------------------
+   Administrative workspaces
+
+   Overview can stay broad because it is a live canvas. The management views
+   need a clear working area instead: a compact context header, one aligned
+   control rail, and data or settings contained in stable surfaces.
+   ----------------------------------------------------------------------- */
+:root[data-theme] main.workspace-main {
+  --workspace-width: min(calc(100% - 40px), 1420px);
+}
+
+:root[data-theme] .workspace-main .page-heading {
+  width: var(--workspace-width);
+  box-sizing: border-box;
+  margin: 20px auto 12px;
+  padding: 17px 20px;
+  border: 1px solid var(--dash-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--dash-panel) 90%, var(--dash-field));
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .workspace-main .page-heading .eyebrow {
+  margin: 0 0 5px;
+  color: var(--ok);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme] .workspace-main .page-heading h1 {
+  color: var(--dash-text);
+  font-size: clamp(20px, 2vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+:root[data-theme] .workspace-main .page-heading p {
+  margin-top: 5px;
+  color: var(--dash-muted);
+  font-size: 12px;
+}
+
+:root[data-theme] .workspace-main .heading-actions .icon-button {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border: 1px solid var(--dash-line);
+  border-radius: 9px;
+  background: var(--dash-inset);
+  color: var(--dash-muted);
+  box-shadow: none;
+}
+
+:root[data-theme] .workspace-main .heading-actions .icon-button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ok) 48%, var(--dash-line));
+  background: color-mix(in srgb, var(--ok) 10%, var(--dash-inset));
+  color: var(--ok);
+}
+
+:root[data-theme] .workspace-nodes .fleet-bar,
+:root[data-theme] .workspace-billing .fleet-bar {
+  width: var(--workspace-width);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 14px 18px;
+  border: 1px solid var(--dash-line);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+  background: color-mix(in srgb, var(--dash-panel) 92%, var(--dash-field));
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .workspace-nodes .fleet-bar h2,
+:root[data-theme] .workspace-billing .fleet-bar h2 {
+  font-size: 16px;
+  letter-spacing: -0.012em;
+}
+
+:root[data-theme] .workspace-nodes .fleet-bar .count-chip,
+:root[data-theme] .workspace-billing .fleet-bar .count-chip {
+  padding: 3px 8px;
+  color: var(--dash-muted);
+  background: var(--dash-inset);
+}
+
+:root[data-theme] .workspace-nodes .fleet-bar + .table-scroll,
+:root[data-theme] .workspace-billing .fleet-bar + .table-scroll {
+  width: var(--workspace-width);
+  box-sizing: border-box;
+  margin: 0 auto;
+  border: 1px solid var(--dash-line);
+  border-top: 1px solid var(--dash-line-soft);
+  border-radius: 0 0 14px 14px;
+  background: color-mix(in srgb, var(--dash-panel) 92%, var(--dash-field));
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .workspace-nodes .fleet-table,
+:root[data-theme] .workspace-billing .fleet-table {
+  background: transparent;
+}
+
+:root[data-theme] .workspace-nodes .fleet-table th,
+:root[data-theme] .workspace-billing .fleet-table th {
+  height: 42px;
+  padding: 10px 15px;
+  background: var(--dash-field);
+  color: var(--dash-faint);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+}
+
+:root[data-theme] .workspace-nodes .fleet-table td,
+:root[data-theme] .workspace-billing .fleet-table td {
+  height: 68px;
+  padding: 12px 15px;
+  border-top-color: var(--dash-line-soft);
+  color: var(--dash-text);
+}
+
+:root[data-theme] .workspace-nodes .fleet-table th:first-child,
+:root[data-theme] .workspace-billing .fleet-table th:first-child {
+  background: var(--dash-field);
+  box-shadow: 1px 0 0 var(--dash-line-soft);
+}
+
+:root[data-theme] .workspace-nodes .fleet-table td:first-child,
+:root[data-theme] .workspace-billing .fleet-table td:first-child {
+  background: color-mix(in srgb, var(--dash-panel) 92%, var(--dash-field));
+  box-shadow: 1px 0 0 var(--dash-line-soft);
+}
+
+:root[data-theme] .workspace-nodes .fleet-table tr:hover td,
+:root[data-theme] .workspace-billing .fleet-table tr:hover td,
+:root[data-theme] .workspace-nodes .fleet-table tr:hover td:first-child,
+:root[data-theme] .workspace-billing .fleet-table tr:hover td:first-child {
+  background: color-mix(in srgb, var(--ok) 5%, var(--dash-panel));
+}
+
+:root[data-theme] .workspace-nodes .fleet-table .icon-button,
+:root[data-theme] .workspace-billing .fleet-table .icon-button {
+  color: var(--dash-faint);
+}
+
+:root[data-theme] .workspace-nodes .fleet-table .icon-button:hover,
+:root[data-theme] .workspace-billing .fleet-table .icon-button:hover {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, var(--dash-inset));
+}
+
+:root[data-theme] .workspace-nodes .pagination,
+:root[data-theme] .workspace-billing .pagination {
+  width: var(--workspace-width);
+  box-sizing: border-box;
+  min-height: 48px;
+  margin: 0 auto;
+  padding: 10px 4px;
+  border: 0;
+}
+
+:root[data-theme] .workspace-billing .billing-totals {
+  width: var(--workspace-width);
+  box-sizing: border-box;
+  display: flex;
+  gap: 18px;
+  margin: 0 auto;
+  padding: 14px 18px;
+  border: 1px solid var(--dash-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--dash-panel) 92%, var(--dash-field));
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .workspace-billing .billing-totals > div {
+  min-width: 168px;
+}
+
+:root[data-theme] .workspace-billing .billing-totals small {
+  color: var(--dash-muted);
+  font-size: 11px;
+}
+
+:root[data-theme] .workspace-billing .billing-totals strong {
+  margin-top: 5px;
+  color: var(--dash-text);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+:root[data-theme] .workspace-events .event-list,
+:root[data-theme] .workspace-events .empty {
+  width: min(var(--workspace-width), 980px);
+  box-sizing: border-box;
+  margin: 0 auto;
+  border: 1px solid var(--dash-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--dash-panel) 92%, var(--dash-field));
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .workspace-events .empty {
+  min-height: 320px;
+  gap: 10px;
+  padding: 38px 24px;
+  border-style: solid;
+}
+
+:root[data-theme] .workspace-events .empty > svg {
+  box-sizing: content-box;
+  padding: 13px;
+  border-radius: 12px;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 13%, var(--dash-inset));
+}
+
+:root[data-theme] .workspace-events .empty h3 {
+  margin-top: 4px;
+  color: var(--dash-text);
+  font-size: 16px;
+}
+
+:root[data-theme] .workspace-events .empty p {
+  color: var(--dash-muted);
+}
+
+:root[data-theme] .workspace-events .event-list {
+  overflow: hidden;
+}
+
+:root[data-theme] .workspace-events .event-list article {
+  padding: 17px 20px;
+  border-bottom-color: var(--dash-line-soft);
+  transition: background-color 150ms ease;
+}
+
+:root[data-theme] .workspace-events .event-list article:hover {
+  background: color-mix(in srgb, var(--ok) 5%, var(--dash-panel));
+}
+
+:root[data-theme] .workspace-events .event-list article:last-child {
+  border-bottom: 0;
+}
+
+:root[data-theme] .workspace-events .event-icon {
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warn) 13%, var(--dash-inset));
+  color: var(--warn);
+}
+
+:root[data-theme] .workspace-events .event-icon.recovery {
+  background: color-mix(in srgb, var(--ok) 13%, var(--dash-inset));
+  color: var(--ok);
+}
+
+:root[data-theme] .workspace-events .event-delivery {
+  align-self: center;
+  padding: 4px 8px;
+  border: 1px solid var(--dash-line-soft);
+  border-radius: 999px;
+  background: var(--dash-inset);
+}
+
+:root[data-theme] .workspace-settings .settings-form {
+  width: min(var(--workspace-width), 1120px);
+  box-sizing: border-box;
+  display: grid;
+  gap: 12px;
+  margin: 0 auto;
+}
+
+:root[data-theme] .workspace-settings .settings-section {
+  grid-template-columns: minmax(170px, 0.5fr) minmax(0, 1fr);
+  gap: 28px;
+  padding: 20px;
+  border: 1px solid var(--dash-line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--dash-panel) 92%, var(--dash-field));
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .workspace-settings .settings-section:first-child {
+  padding-top: 20px;
+}
+
+:root[data-theme] .workspace-settings .settings-section > div > h3 {
+  color: var(--dash-text);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+
+:root[data-theme] .workspace-settings .settings-section > div > p {
+  margin-top: 5px;
+  color: var(--dash-muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+:root[data-theme] .workspace-settings .form-grid {
+  gap: 16px;
+}
+
+:root[data-theme] .workspace-settings .field {
+  gap: 7px;
+}
+
+:root[data-theme] .workspace-settings .field > span {
+  color: var(--dash-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+:root[data-theme] .workspace-settings .check {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--dash-line-soft);
+  border-radius: 9px;
+  background: var(--dash-field);
+  color: var(--dash-text);
+}
+
+:root[data-theme] .workspace-settings .quota-inline {
+  margin-top: 18px;
+  padding: 14px 0;
+  border-color: var(--dash-line-soft);
+}
+
+:root[data-theme] .workspace-settings .quota-inline small {
+  color: var(--dash-faint);
+}
+
+:root[data-theme] .workspace-settings .quota-inline strong {
+  color: var(--dash-text);
+  font-size: 18px;
+}
+
+:root[data-theme] .workspace-settings .notification-status {
+  min-height: 40px;
+  margin-top: 0;
+  padding: 0 11px;
+  border: 1px solid var(--dash-line-soft);
+  border-radius: 9px;
+  background: var(--dash-field);
+}
+
+:root[data-theme] .workspace-settings .settings-actions {
+  width: min(var(--workspace-width), 1120px);
+  box-sizing: border-box;
+  max-width: none;
+  margin: 0 auto 10px;
+  padding: 6px 0 0;
+}
+
+:root[data-theme] .workspace-settings .settings-actions .primary {
+  min-height: 40px;
+  padding-inline: 16px;
+  border-radius: 9px;
+}
+
+@media (max-width: 900px) {
+  :root[data-theme] main.workspace-main {
+    --workspace-width: min(calc(100% - 28px), 1420px);
+  }
+
+  :root[data-theme] .workspace-main .page-heading {
+    margin-top: 14px;
+    padding: 15px 16px;
+  }
+
+  :root[data-theme] .workspace-nodes .fleet-bar,
+  :root[data-theme] .workspace-billing .fleet-bar {
+    padding: 12px 14px;
+  }
+
+  :root[data-theme] .workspace-settings .settings-section {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 17px;
+  }
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .workspace-main .page-heading {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  :root[data-theme] .workspace-main .heading-actions {
+    padding-top: 0;
+  }
+
+  :root[data-theme] .workspace-events .event-list,
+  :root[data-theme] .workspace-events .empty {
+    width: var(--workspace-width);
+  }
+
+  :root[data-theme] .workspace-events .empty {
+    min-height: 280px;
+    padding: 30px 18px;
+  }
+
+  :root[data-theme] .workspace-events .event-list article {
+    gap: 12px;
+    padding: 15px;
+  }
+
+  :root[data-theme] .workspace-events .event-delivery {
+    display: none;
+  }
+
+  :root[data-theme] .workspace-settings .settings-form,
+  :root[data-theme] .workspace-settings .settings-actions {
+    width: var(--workspace-width);
+  }
+
+  :root[data-theme] .workspace-settings .settings-section {
+    padding: 16px;
+  }
+
+  :root[data-theme] .workspace-settings .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  :root[data-theme] .workspace-settings .quota-inline {
+    gap: 10px;
+  }
+
+  :root[data-theme] .workspace-settings .quota-inline strong {
+    font-size: 16px;
+  }
+}
+
+/* Keep the account status at the base of the navigation rail. A scrollable
+   drawer still preserves every action on short displays. */
+:root[data-theme] .sidebar {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+:root[data-theme] .sidebar-bottom {
+  display: grid;
+  gap: 3px;
+  margin-top: auto;
+  padding: 12px 0 0;
+  border-top: 0;
+}
+
+:root[data-theme] .sidebar-bottom::before {
+  content: "";
+  height: 1px;
+  margin: 0 10px 6px;
+  background: var(--dash-line-soft);
+}
+
+:root[data-theme] .sidebar .deployment {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 8px;
+  column-gap: 8px;
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+}
+
+:root[data-theme] .sidebar .deployment > span:nth-child(2) {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+:root[data-theme] .sidebar .deployment small {
+  margin-top: 1px;
+  font-size: 9.5px;
+}
+
+:root[data-theme] .sidebar .cloud-mark {
+  width: 21px;
+  height: 28px;
+}
+
+:root[data-theme] .sidebar .cloud-mark svg {
+  width: 18px;
+  height: 18px;
+}
+
+:root[data-theme] .sidebar .account-button {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  column-gap: 8px;
+  justify-content: stretch;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 7px;
+}
+
+:root[data-theme] .sidebar .account-button span {
+  min-width: 0;
+  text-align: left;
+}
+
+/* Keep map controls present without making them read like a floating form.
+   The switcher already names the projection, so the icon controls only need
+   their accessible labels and hover titles. */
+:root[data-theme] .flat-map-controls {
+  top: 48px;
+  right: 10px;
+  gap: 0;
+  padding: 2px;
+  border-color: var(--dash-line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--dash-panel) 90%, var(--dash-field));
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .flat-map-controls > span {
+  display: none;
+}
+
+:root[data-theme] .flat-map-controls button {
+  width: 30px;
+  height: 30px;
+  min-height: 30px;
+  border-radius: 7px;
+}
+
+:root[data-theme] .flat-map-controls button + button {
+  border-left: 1px solid var(--dash-line-soft);
+  border-radius: 0;
+}
+
+:root[data-theme] .flat-map-controls button:last-child {
+  border-radius: 0 7px 7px 0;
+}
+
+@media (min-width: 701px) {
+  :root[data-theme] .flat-map-controls {
+    top: 48px;
+    right: 10px;
+    bottom: auto;
+    left: auto;
+    transform: none;
+  }
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .flat-map-controls {
+    top: auto;
+    right: auto;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Billing keeps the figure visible while the table owns the scroll range.
+   The product footer remains a full workspace bar at every desktop width. */
+:root[data-theme] .workspace-billing .billing-summary {
+  width: var(--workspace-width);
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  margin: 0 auto 10px;
+}
+
+:root[data-theme] .workspace-billing .billing-summary .billing-totals {
+  width: 100%;
+  min-height: 58px;
+  align-items: center;
+  margin: 0;
+  padding: 10px 16px;
+}
+
+:root[data-theme] .workspace-billing .billing-summary .billing-totals > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+:root[data-theme] .workspace-billing .billing-summary .billing-totals strong {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+@media (min-width: 701px) {
+  :root[data-theme] main.workspace-billing {
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+  }
+
+  :root[data-theme] main.workspace-main > .site-meta {
+    width: 100%;
+    max-width: none;
+    align-self: stretch;
+    margin: 0;
+  }
+}
+
+/* The older shell can constrain a flex child at intermediate display scales.
+   Keep every administration workspace attached to the viewport; each page
+   then decides the appropriate reading width for its own content. */
+:root[data-theme] main.workspace-main {
+  width: 100vw;
+  max-width: 100vw;
+  align-self: stretch;
+  margin-right: calc(50% - 50vw);
+  margin-left: calc(50% - 50vw);
+}
+
+:root[data-theme] main.workspace-main > .site-meta {
+  width: 100%;
+  max-width: none;
+  align-self: stretch;
+  margin: auto 0 0;
+}
+
+:root[data-theme] .flat-map-summary {
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-color: var(--dash-line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dash-panel) 92%, var(--dash-field));
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .flat-map-summary > span {
+  color: var(--dash-faint);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme] .flat-map-summary strong {
+  color: var(--dash-text);
+  font-size: 12px;
+  line-height: 1;
+}
+
+:root[data-theme] .flat-map-summary small {
+  gap: 4px;
+  color: var(--dash-muted);
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .flat-map-controls {
+    top: 44px;
+    right: 8px;
+  }
+
+  :root[data-theme] .flat-map-summary {
+    left: 10px;
+    bottom: 10px;
+  }
+}
+
+/* Only status dots sit on the rotating surface. */
+:root[data-theme] .globe-panel .globe-marker > i {
+  width: 10px;
+  height: 10px;
+  border-width: 2px;
+}
+
+.geo-overview .globe-marker {
+  top: 0;
+  left: 0;
+}
+
+/* The globe uses the same quiet surfaces as the surrounding dashboard. */
+:root[data-theme] .globe-panel .globe-themed {
+  background: var(--dash-globe-field);
+  box-shadow: inset 0 0 0 1px var(--dash-line-soft);
+}
+
+:root[data-theme] .globe-themed .globe-network-heading {
+  top: 18px;
+  left: 18px;
+  gap: 5px;
+}
+
+:root[data-theme] .globe-themed .globe-network-heading > span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--dash-text);
+}
+
+:root[data-theme] .globe-themed .globe-network-heading small {
+  font-size: 10px;
+  color: var(--dash-faint);
+}
+
+:root[data-theme] .globe-themed .map-view-switcher {
+  top: 14px;
+  right: 14px;
+  padding: 3px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dash-field);
+  box-shadow: none;
+}
+
+:root[data-theme] .globe-themed .map-view-switcher button {
+  min-height: 28px;
+  border-radius: 5px;
+  color: var(--dash-muted);
+  font-weight: 550;
+}
+
+:root[data-theme] .globe-themed .map-view-switcher button.active {
+  background: var(--dash-panel);
+  color: var(--dash-text);
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-controls {
+  top: auto;
+  right: 14px;
+  bottom: 14px;
+  gap: 1px;
+  padding: 3px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--dash-panel);
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-controls::before {
+  content: none;
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-controls button {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  border-radius: 6px;
+  font-size: 10px;
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-controls button.active {
+  background: var(--dash-field);
+  color: var(--dash-text);
+}
+
+:root[data-theme] .globe-themed .globe-location-summary {
+  left: 18px;
+  bottom: 18px;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme] .globe-themed .globe-location-summary strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-marker {
+  --marker-color: var(--dash-faint);
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  min-height: 26px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+  outline: none;
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-marker.online {
+  --marker-color: var(--ok);
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-marker.offline {
+  --marker-color: var(--alert);
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-marker > i {
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--dash-panel);
+  background: var(--marker-color);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.18);
+  transform: none;
+  transition: none;
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-marker.selected > i,
+:root[data-theme] .globe-panel .globe-themed .globe-marker:focus-visible > i {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--marker-color) 24%, transparent);
+}
+
+:root[data-theme] .globe-panel .globe-themed .globe-marker:focus-visible {
+  outline: 2px solid var(--dash-muted);
+  outline-offset: -2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme] .globe-panel .globe-themed .globe-marker:hover > i {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--marker-color) 24%, transparent);
+  }
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .globe-panel:has(.globe-themed) {
+    height: 356px;
+    min-height: 356px;
+  }
+
+  :root[data-theme] .globe-panel .geo-overview:has(.globe-themed),
+  :root[data-theme] .globe-panel .globe-themed {
+    height: 320px;
+    min-height: 320px;
+  }
+
+  :root[data-theme] .globe-panel .globe-themed .globe-canvas {
+    position: absolute;
+    top: 44px;
+    height: 186px;
+    min-height: 0;
+  }
+
+  :root[data-theme] .globe-panel .globe-themed .globe-controls {
+    left: 50%;
+    right: auto;
+    bottom: 10px;
+    transform: translateX(-50%);
+  }
+
+  :root[data-theme] .globe-panel .globe-themed .globe-controls button {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  :root[data-theme] .globe-themed .globe-location-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    left: 14px;
+    right: 14px;
+    bottom: 70px;
+    gap: 8px;
+  }
+}
+
+/* Let long grids use the browser's natural document scroll. The map keeps
+   its own wheel handlers, so zooming or rotating it does not advance the
+   surrounding page. */
+@media (min-width: 981px) {
+  html,
+  body,
+  #root,
+  :root[data-theme] .app-shell,
+  :root[data-theme] .main-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  :root[data-theme] .main-shell {
+    display: block;
+  }
+
+  :root[data-theme] main.workspace-main,
+  :root[data-theme] main.workspace-overview {
+    height: auto;
+    min-height: calc(100dvh - 60px);
+    overflow: visible;
+  }
+
+  :root[data-theme] .workspace-overview .dash-top {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  :root[data-theme] .workspace-overview .fleet-results,
+  :root[data-theme] .workspace-nodes .fleet-results,
+  :root[data-theme] .workspace-billing .fleet-results,
+  :root[data-theme] .workspace-events > .event-list,
+  :root[data-theme] .workspace-events > .empty,
+  :root[data-theme] .workspace-events > .loading,
+  :root[data-theme] .workspace-settings > .settings-form,
+  :root[data-theme] .workspace-settings > .loading {
+    flex: 0 0 auto;
+    min-height: auto;
+    overflow: visible;
+  }
+}
+
+/* Keep the flat-map controls compact even when an earlier layout rule sets a
+   vertical anchor. This prevents the control rail from stretching into a
+   large blank panel. */
+:root[data-theme] .flat-network-map.flat-themed .flat-map-controls {
+  top: 48px;
+  right: 10px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-controls {
+    top: auto;
+    right: auto;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* The administration tables contain several related fields. On a phone they
+   become compact record cards so every field stays visible without requiring
+   a horizontal swipe through a desktop table. */
+@media (max-width: 700px) {
+  :root[data-theme] .workspace-nodes .fleet-results > .table-scroll,
+  :root[data-theme] .workspace-billing .fleet-results > .table-scroll {
+    width: var(--workspace-width);
+    max-width: none;
+    margin: 0 auto;
+    overflow: visible;
+  }
+
+  :root[data-theme] .fleet-table.nodes,
+  :root[data-theme] .fleet-table.billing {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  :root[data-theme] .fleet-table.nodes thead,
+  :root[data-theme] .fleet-table.billing thead {
+    display: none;
+  }
+
+  :root[data-theme] .fleet-table.nodes tbody,
+  :root[data-theme] .fleet-table.billing tbody {
+    display: block;
+  }
+
+  :root[data-theme] .fleet-table.nodes tr,
+  :root[data-theme] .fleet-table.billing tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 16px;
+    padding: 16px;
+    border-top: 1px solid var(--dash-line-soft);
+  }
+
+  :root[data-theme] .fleet-table.nodes tr:first-child,
+  :root[data-theme] .fleet-table.billing tr:first-child {
+    border-top: 0;
+  }
+
+  :root[data-theme] .fleet-table.nodes td,
+  :root[data-theme] .fleet-table.billing td,
+  :root[data-theme] .fleet-table.nodes td:first-child,
+  :root[data-theme] .fleet-table.billing td:first-child {
+    display: block;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    white-space: normal;
+  }
+
+  :root[data-theme] .fleet-table.nodes td:first-child,
+  :root[data-theme] .fleet-table.billing td:first-child {
+    grid-column: 1;
+  }
+
+  :root[data-theme] .fleet-table.nodes td:nth-child(2),
+  :root[data-theme] .fleet-table.billing td:nth-child(2) {
+    grid-column: 2;
+    align-self: start;
+    justify-self: end;
+    padding-top: 2px;
+    text-align: right;
+  }
+
+  :root[data-theme] .fleet-table.nodes td:nth-child(n + 3),
+  :root[data-theme] .fleet-table.billing td:nth-child(n + 3) {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+  }
+
+  :root[data-theme] .fleet-table.nodes td:nth-child(n + 3)::before,
+  :root[data-theme] .fleet-table.billing td:nth-child(n + 3)::before {
+    content: attr(data-label);
+    color: var(--dash-faint);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.025em;
+  }
+
+  :root[data-theme] .fleet-table.nodes td:last-child,
+  :root[data-theme] .fleet-table.billing td:last-child {
+    grid-column: 1 / -1;
+  }
+
+  :root[data-theme] .fleet-table.nodes .row-actions,
+  :root[data-theme] .fleet-table.billing .row-actions {
+    justify-content: flex-start;
+  }
+
+  :root[data-theme] .fleet-table.nodes .region-group,
+  :root[data-theme] .fleet-table.billing .region-group,
+  :root[data-theme] .fleet-table.nodes .last-report,
+  :root[data-theme] .fleet-table.billing .last-report {
+    align-items: flex-start;
+  }
+}
+
+/* Wide desktops need density rather than oversized empty metric cards. Keep
+   the overview on one visual grid and reveal a useful row of nodes sooner. */
+@media (min-width: 1320px) {
+  :root[data-theme] .workspace-overview .dash-top {
+    grid-template-columns: minmax(440px, 0.7fr) minmax(760px, 1.3fr);
+    gap: clamp(20px, 1.5vw, 28px);
+    padding: 16px clamp(24px, 2vw, 32px);
+  }
+
+  :root[data-theme] .workspace-overview .dash-top > .stat-grid {
+    gap: 14px;
+    padding: 0;
+  }
+
+  :root[data-theme] .workspace-overview .dash-top .stat-card {
+    padding: 16px 18px;
+  }
+
+  :root[data-theme] .workspace-overview .fleet-bar {
+    padding-right: clamp(24px, 2vw, 32px);
+    padding-left: clamp(24px, 2vw, 32px);
+  }
+
+  :root[data-theme] .workspace-overview .node-grid {
+    grid-template-columns: repeat(auto-fill, minmax(288px, 1fr));
+    gap: 16px;
+    padding-right: clamp(24px, 2vw, 32px);
+    padding-left: clamp(24px, 2vw, 32px);
+  }
+
+  :root[data-theme] main.workspace-main > .site-meta {
+    padding-right: clamp(24px, 2vw, 32px);
+    padding-left: clamp(24px, 2vw, 32px);
+  }
+}
+
+@media (min-width: 1600px) {
+  :root[data-theme] main.workspace-main {
+    --workspace-width: min(calc(100% - 64px), 1680px);
+  }
+}
+
+/* The metric deck is a working summary on desktop. A compact icon header and
+   a stable context line make idle or waiting cards informative instead of
+   reading as six empty panels beside the map. */
+@media (min-width: 981px) {
+  :root[data-theme] .workspace-overview .stat-card {
+    --stat-card-accent: var(--dash-faint);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  :root[data-theme] .workspace-overview .stat-card::before {
+    position: absolute;
+    top: 16px;
+    bottom: 16px;
+    left: 0;
+    z-index: -1;
+    width: 3px;
+    content: "";
+    border-radius: 0 999px 999px 0;
+    background: color-mix(in srgb, var(--stat-card-accent) 68%, transparent);
+  }
+
+  :root[data-theme] .workspace-overview .stat-card-ok {
+    --stat-card-accent: var(--ok);
+  }
+
+  :root[data-theme] .workspace-overview .stat-card-warn,
+  :root[data-theme] .workspace-overview .stat-card-disk {
+    --stat-card-accent: var(--warn);
+  }
+
+  :root[data-theme] .workspace-overview .stat-card-alert {
+    --stat-card-accent: var(--alert);
+  }
+
+  :root[data-theme] .workspace-overview .stat-card-memory,
+  :root[data-theme] .workspace-overview .stat-card-traffic,
+  :root[data-theme] .workspace-overview .stat-card-inbound {
+    --stat-card-accent: var(--monitor-accent);
+  }
+
+  :root[data-theme] .workspace-overview .stat-card-outbound {
+    --stat-card-accent: var(--ok);
+  }
+
+  :root[data-theme] .workspace-overview .stat-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 24px;
+  }
+
+  :root[data-theme] .workspace-overview .stat-icon {
+    display: inline-grid;
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border-radius: 7px;
+    color: var(--stat-card-accent);
+    background: color-mix(in srgb, var(--stat-card-accent) 12%, var(--dash-inset));
+  }
+
+  :root[data-theme] .workspace-overview .stat-label {
+    color: var(--dash-muted);
+    font-size: 12px;
+    font-weight: 620;
+  }
+
+  :root[data-theme] .workspace-overview .stat-value {
+    margin-top: 3px;
+  }
+
+  :root[data-theme] .workspace-overview .stat-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 22px;
+    margin-top: auto;
+    padding-top: 9px;
+    border-top: 1px solid color-mix(in srgb, var(--dash-line) 76%, transparent);
+    color: var(--dash-faint);
+    font-size: 11px;
+  }
+
+  :root[data-theme] .workspace-overview .stat-note::before {
+    width: 5px;
+    height: 5px;
+    flex: 0 0 5px;
+    content: "";
+    border-radius: 999px;
+    background: var(--stat-card-accent);
+  }
+
+  :root[data-theme] .workspace-overview .stat-placeholder {
+    min-height: 32px;
+  }
+}
+
+/* Keep document scrolling available without leaving a visual scrollbar rail
+   beside the monitoring canvas. Keyboard, wheel, touch and programmatic
+   scrolling keep their normal behavior. */
+html,
+body,
+#root,
+:root[data-theme] .app-shell,
+:root[data-theme] .main-shell,
+:root[data-theme] main.workspace-main {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar,
+:root[data-theme] .app-shell::-webkit-scrollbar,
+:root[data-theme] .main-shell::-webkit-scrollbar,
+:root[data-theme] main.workspace-main::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Desktop is a fixed operations workspace. The node results own their scroll
+   range, so the browser frame stays still while filters and map controls do
+   not slide out of view. */
+@media (min-width: 981px) {
+  html,
+  body,
+  #root,
+  :root[data-theme] .app-shell,
+  :root[data-theme] .main-shell {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  :root[data-theme] .main-shell {
+    display: flex;
+    flex-direction: column;
+  }
+
+  :root[data-theme] main.workspace-main {
+    height: calc(100dvh - 60px);
+    min-height: 0;
+    overflow: hidden;
+    scrollbar-width: none;
+  }
+
+  :root[data-theme] main.workspace-main::-webkit-scrollbar,
+  :root[data-theme] .fleet-results::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  :root[data-theme] main.workspace-overview {
+    overflow: hidden;
+  }
+
+  :root[data-theme] .workspace-overview .dash-top {
+    flex: 0 0 320px;
+    overflow: hidden;
+  }
+
+  :root[data-theme] .workspace-overview .fleet-bar {
+    flex: 0 0 auto;
+  }
+
+  :root[data-theme] .workspace-overview .fleet-results {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  :root[data-theme] .workspace-overview .node-grid {
+    padding-bottom: 12px;
+  }
+
+  :root[data-theme] .workspace-overview .site-meta {
+    flex: 0 0 auto;
+    margin: 0;
+  }
+
+  :root[data-theme] .workspace-nodes .fleet-results,
+  :root[data-theme] .workspace-billing .fleet-results,
+  :root[data-theme] .workspace-events > .event-list,
+  :root[data-theme] .workspace-events > .empty,
+  :root[data-theme] .workspace-events > .loading,
+  :root[data-theme] .workspace-settings > .settings-form,
+  :root[data-theme] .workspace-settings > .loading {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  :root[data-theme] .workspace-settings > .settings-form {
+    padding-bottom: 12px;
+  }
+}
+
+/* `main` inherited an auto horizontal margin from the legacy shell. In the
+   fixed workspace it then shrank to the width of a narrow empty state, taking
+   the page heading and footer with it. Each workspace owns the full shell;
+   individual content surfaces continue to use `--workspace-width`. */
+:root[data-theme] main.workspace-main {
+  width: 100%;
+  margin-inline: 0;
+  align-self: stretch;
+}
+
+/* The map keeps its wheel and touch gestures. A wheel over this surface zooms
+   the map instead of moving the surrounding workspace. */
+:root[data-theme] .flat-network-map {
+  overscroll-behavior: contain;
+  touch-action: none;
+}
+
+:root[data-theme] .flat-map-graphic {
+  touch-action: none;
+}
+
+/* The view choice is a compact two-button switch that shares the search
+   field's baseline without allowing the second button to be clipped. */
+:root[data-theme] .fleet-tools {
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+:root[data-theme] .fleet-tools .view-switch {
+  flex: 0 0 76px;
+  width: 76px;
+  height: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+}
+
+:root[data-theme] .fleet-tools .view-switch .icon-button {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border-radius: 7px;
+}
+
+:root[data-theme] .workspace-nodes .fleet-results > .table-scroll,
+:root[data-theme] .workspace-billing .fleet-results > .table-scroll {
+  width: var(--workspace-width);
+  box-sizing: border-box;
+  margin: 0 auto;
+  border: 1px solid var(--dash-line);
+  border-top: 1px solid var(--dash-line-soft);
+  border-radius: 0 0 14px 14px;
+  background: color-mix(in srgb, var(--dash-panel) 92%, var(--dash-field));
+  box-shadow: var(--dash-elevation);
+}
+
+/* The drawer's bottom block uses one explicit inner gutter. The previous
+   pseudo divider had its own margins, so it could look centred while the
+   action rows used a different alignment grid. */
+:root[data-theme] .sidebar-bottom {
+  width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
+  gap: 3px;
+  padding: 14px 10px 8px;
+}
+
+:root[data-theme] .sidebar-bottom::before {
+  width: 100%;
+  box-sizing: border-box;
+  justify-self: stretch;
+  margin: 0 0 6px;
+}
+
+:root[data-theme] .sidebar .deployment,
+:root[data-theme] .sidebar .account-button {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+/* The legacy desktop header retained auto side margins inside the fixed
+   workspace, which made the toolbar shrink around its contents. Header and
+   footer now share one full-width shell and a compact, consistent gutter. */
+@media (min-width: 981px) {
+  :root[data-theme] .main-shell > .topbar {
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    flex: 0 0 60px;
+    margin: 0;
+    padding: 0 22px;
+  }
+
+  :root[data-theme] main.workspace-main > .site-meta {
+    min-height: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+    box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
+    margin: 0;
+  padding: 0 22px;
+    background: var(--dash-panel);
+  }
+
+  :root[data-theme] main.workspace-main > .site-meta .visitor-bar,
+  :root[data-theme] main.workspace-main > .site-meta footer {
+    min-height: 30px;
+  }
+
+  :root[data-theme] main.workspace-main > .site-meta footer {
+    align-self: stretch;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 16px;
+    margin: 0;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  :root[data-theme] main.workspace-main > .site-meta footer span,
+  :root[data-theme] main.workspace-main > .site-meta footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+  }
+}
+
+/* The document scrolls on tablets and phones. Fixed positioning keeps the
+   global controls available on long node, billing, settings and event pages;
+   the workspace reserves the same amount of space before its content. */
+@media (max-width: 980px) {
+  :root[data-theme] .main-shell > .topbar {
+    position: fixed;
+    inset: 0 0 auto;
+    width: 100%;
+    z-index: 40;
+  }
+
+  :root[data-theme] main.workspace-main {
+    padding-top: 60px;
+  }
+}
+
+/* On a phone the navigation drawer already exposes settings and alerts. Keep
+   the persistent bar to the actions needed everywhere and retain comfortable
+   touch targets instead of letting the final action leave the viewport. */
+@media (max-width: 700px) {
+  :root[data-theme] .top-actions {
+    gap: 2px;
+  }
+
+  :root[data-theme] .top-actions .icon-button {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+
+  :root[data-theme] .top-actions .top-action-secondary {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  :root[data-theme] .brand-inline > span:last-child {
+    display: none;
+  }
+}
+
+/* The compact fleet toolbar previously held search, group controls and two
+   actions on one line. At 320px the search input was reduced to an icon. */
+@media (max-width: 480px) {
+  :root[data-theme] .fleet-tools {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  :root[data-theme] .fleet-tools .ui-search {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+
+  :root[data-theme] .fleet-tools > .ui-select-trigger {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  :root[data-theme] .fleet-tools > .icon-button {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+}
+
+/* Final flat-projection pass. Keep the atlas legible without turning it into
+   a second decorative colour system beside the 3D globe. */
+:root[data-theme] .flat-network-map.flat-themed {
+  isolation: isolate;
+  border: 0;
+  border-radius: 12px;
+  background: var(--dash-globe-field);
+  box-shadow: inset 0 0 0 1px var(--dash-line-soft);
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-graphic {
+  touch-action: pan-y;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-grid line {
+  stroke: var(--dash-line);
+  stroke-width: 0.8;
+  stroke-opacity: 0.48;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-grid line:nth-child(3),
+:root[data-theme] .flat-network-map.flat-themed .flat-map-grid line:nth-child(8) {
+  stroke-opacity: 0.72;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-land path {
+  fill: oklch(0.84 0.032 190);
+  stroke: oklch(0.59 0.042 205 / 0.72);
+  stroke-width: 1.1;
+}
+
+:root[data-theme="dark"] .flat-network-map.flat-themed .flat-map-land path {
+  fill: oklch(0.34 0.032 205);
+  stroke: oklch(0.65 0.035 205 / 0.48);
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-frame {
+  stroke: transparent;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .map-view-switcher {
+  top: 14px;
+  right: 14px;
+  padding: 3px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--dash-field);
+  box-shadow: none;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .map-view-switcher button {
+  min-height: 28px;
+  border-radius: 5px;
+  color: var(--dash-muted);
+  font-weight: 550;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .map-view-switcher button.active {
+  background: var(--dash-panel);
+  color: var(--dash-text);
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-heading {
+  top: 18px;
+  left: 18px;
+  gap: 5px;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-heading span {
+  color: var(--dash-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-heading small {
+  color: var(--dash-faint);
+  font-size: 10px;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-node {
+  --flat-map-node-color: var(--dash-faint);
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-node.online {
+  --flat-map-node-color: var(--ok);
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-node.offline {
+  --flat-map-node-color: var(--alert);
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-node-hit-area {
+  fill: transparent;
+  pointer-events: all;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-node-ring {
+  fill: var(--dash-panel);
+  stroke: var(--flat-map-node-color);
+  stroke-width: 1.4;
+  transition: stroke-width 150ms ease-out, filter 150ms ease-out;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-node-dot {
+  fill: var(--flat-map-node-color);
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-node.selected .flat-map-node-ring,
+:root[data-theme] .flat-network-map.flat-themed .flat-map-node:focus-visible .flat-map-node-ring {
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--flat-map-node-color) 32%, transparent));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-node:hover .flat-map-node-ring {
+    stroke-width: 2.4;
+  }
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-summary {
+  left: 18px;
+  bottom: 18px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-summary > span {
+  color: var(--dash-faint);
+  font-size: 9px;
+  letter-spacing: 0.055em;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-summary strong {
+  color: var(--dash-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-controls {
+  top: auto;
+  right: 14px;
+  bottom: 14px;
+  gap: 1px;
+  padding: 3px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--dash-panel);
+  box-shadow: var(--dash-elevation);
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-controls button,
+:root[data-theme] .flat-network-map.flat-themed .flat-map-controls button + button,
+:root[data-theme] .flat-network-map.flat-themed .flat-map-controls button:last-child {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-controls button:hover:not(:disabled) {
+  background: var(--dash-field);
+  color: var(--dash-text);
+}
+
+:root[data-theme] .flat-network-map.flat-themed .map-view-switcher button:focus-visible,
+:root[data-theme] .flat-network-map.flat-themed .flat-map-controls button:focus-visible {
+  outline: 2px solid var(--dash-muted);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-node-ring {
+    transition: none;
+  }
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .globe-panel:has(.flat-network-map.flat-themed) {
+    height: 356px;
+    min-height: 356px;
+  }
+
+  :root[data-theme] .flat-network-map.flat-themed {
+    height: 320px;
+    min-height: 320px;
+  }
+
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-graphic {
+    position: absolute;
+    top: 44px;
+    height: 186px;
+    min-height: 0;
+  }
+
+  :root[data-theme] .flat-network-map.flat-themed .map-view-switcher {
+    top: 12px;
+    right: 12px;
+  }
+
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    left: 14px;
+    right: 14px;
+    bottom: 70px;
+    gap: 8px;
+  }
+
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-controls {
+    right: auto;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-controls button,
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-controls button + button,
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-controls button:last-child {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Full-page scrolling takes precedence over the older fixed-workspace mode.
+   Map events are still handled by Globe before they can scroll the document. */
+@media (min-width: 981px) {
+  html,
+  body,
+  #root,
+  :root[data-theme] .app-shell,
+  :root[data-theme] .main-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow-x: clip;
+    overflow-y: visible;
+  }
+
+  :root[data-theme] .main-shell {
+    display: block;
+  }
+
+  :root[data-theme] main.workspace-main,
+  :root[data-theme] main.workspace-overview {
+    height: auto;
+    min-height: calc(100dvh - 60px);
+    overflow: visible;
+  }
+
+  :root[data-theme] .workspace-overview .dash-top {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  :root[data-theme] .workspace-overview .fleet-results,
+  :root[data-theme] .workspace-nodes .fleet-results,
+  :root[data-theme] .workspace-billing .fleet-results,
+  :root[data-theme] .workspace-events > .event-list,
+  :root[data-theme] .workspace-events > .empty,
+  :root[data-theme] .workspace-events > .loading,
+  :root[data-theme] .workspace-settings > .settings-form,
+  :root[data-theme] .workspace-settings > .loading {
+    flex: 0 0 auto;
+    min-height: auto;
+    overflow: visible;
+  }
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-graphic {
+  cursor: grab;
+  touch-action: none;
+}
+
+:root[data-theme] .flat-network-map.flat-themed .flat-map-graphic.is-dragging {
+  cursor: grabbing;
+}
+
+/* Do not let the map control rail inherit both top and bottom anchors. */
+:root[data-theme] .flat-network-map.flat-themed .flat-map-controls {
+  top: 48px;
+  right: 10px;
+  bottom: auto;
+  left: auto;
+  transform: none;
+}
+
+@media (max-width: 700px) {
+  :root[data-theme] .flat-network-map.flat-themed .flat-map-controls {
+    top: auto;
+    right: auto;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}

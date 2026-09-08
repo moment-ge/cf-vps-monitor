@@ -1,0 +1,9 @@
+{
+  "endpoint": "https://YOUR-WORKER.YOUR-SUBDOMAIN.workers.dev",
+  "token": "REPLACE_WITH_NODE_TOKEN",
+  "interval": 120,
+  "diskPath": "",
+  "networkInterface": "",
+  "tcpProbe": "",
+  "probeEvery": 5
+}

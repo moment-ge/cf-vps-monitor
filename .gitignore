@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.wrangler/
+# Local editor, browser, build, and release artifacts.
+.DS_Store
+.claude/
+.design/
+.playwright-cli/
+output/
+design-drafts/
+release/
+pelican-bicycle.html
+*.tsbuildinfo
+.dev.vars
+.local-admin
+.production-secrets.json
+agent/config.json
+agent/.venv/
+__pycache__/
+review/
+upstream/
+*.log
+*.zip
